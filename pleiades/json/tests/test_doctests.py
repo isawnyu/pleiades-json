@@ -1,24 +1,22 @@
 import unittest
-
 from zope.testing import doctestunit
 from zope.component import testing
 from Testing import ZopeTestCase as ztc
-
 from Products.Five import zcml
 from Products.Five import fiveconfigure
 from Products.PloneTestCase import PloneTestCase as ptc
 from Products.PloneTestCase.layer import PloneSite
-ptc.setupPloneSite()
-
 import pleiades.json
+from pleiades.json.tests.base import PleiadesJSONFunctionalTestCase
+
+ptc.setupPloneSite()
 
 class TestCase(ptc.PloneTestCase):
     class layer(PloneSite):
         @classmethod
         def setUp(cls):
             fiveconfigure.debug_mode = True
-            zcml.load_config('configure.zcml',
-                             pleiades.json)
+            zcml.load_config('configure.zcml', pleiades.json)
             fiveconfigure.debug_mode = False
 
         @classmethod
@@ -31,22 +29,28 @@ def test_suite():
 
         # Unit tests
         #doctestunit.DocFileSuite(
-        #    'README.txt', package='pleiades.json',
+        #    'README.txt', package='zgeo.plone.kml',
         #    setUp=testing.setUp, tearDown=testing.tearDown),
 
-        doctestunit.DocTestSuite(
-            module='pleiades.json.browser',
-            setUp=testing.setUp, tearDown=testing.tearDown),
+        #doctestunit.DocTestSuite(
+        #    module='zgeo.plone.kml.mymodule',
+        #    setUp=testing.setUp, tearDown=testing.tearDown),
 
 
         # Integration tests that use PloneTestCase
         #ztc.ZopeDocFileSuite(
-        #    'README.txt', package='pleiades.json',
-        #    test_class=TestCase),
+        #    'README.txt', package='zgeo.plone.kml',
+        #    test_class=PloneKMLFunctionalTestCase),
+
+        ztc.FunctionalDocFileSuite(
+            'json.txt', package='pleiades.json.tests',
+            test_class=PleiadesJSONFunctionalTestCase
+            ),
 
         #ztc.FunctionalDocFileSuite(
-        #    'browser.txt', package='pleiades.json',
-        #    test_class=TestCase),
+        #    'large-folder-kml.txt', package='zgeo.plone.kml.tests',
+         #   test_class=PloneKMLFunctionalTestCase
+        #    ),
 
         ])
 

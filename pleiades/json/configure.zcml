@@ -1,7 +1,21 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:five="http://namespaces.zope.org/five"
+    xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="pleiades.json">
 
+  <browser:page
+    for="Products.PleiadesEntity.content.interfaces.IPlace"
+    name="json"
+    class=".browser.FeatureCollection"
+    permission="zope2.View"
+    />
 
+  <browser:page
+    for="Products.PleiadesEntity.content.interfaces.IFeature"
+    name="json"
+    class=".browser.Feature"
+    permission="zope2.View"
+    />
+        
 </configure>

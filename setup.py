@@ -25,7 +25,9 @@ setup(name='pleiades.json',
       zip_safe=False,
       install_requires=[
           'setuptools',
-          'simplejson'
+          'geojson',
+          'shapely',
+          'pleiades.openlayers'
           # -*- Extra requirements: -*-
       ],
       entry_points="""
