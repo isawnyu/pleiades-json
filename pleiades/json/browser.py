@@ -10,9 +10,12 @@ from pleiades.openlayers.proj import Transform, PROJ_900913
 
 TGOOGLE = Transform(PROJ_900913)
 
-def wrap(ob):
+def wrap(ob, project_sm=False):
     g = IGeoreferenced(ob)
-    geo = TGOOGLE(g)
+    if project_sm:
+        geo = TGOOGLE(g)
+    else:
+        geo = g
     geometry = geojson.GeoJSON.to_instance(
         dict(type=geo.type, coordinates=geo.coordinates)
         )
@@ -25,9 +28,9 @@ def wrap(ob):
             link=ob.absolute_url()
             )
         )
-        
-class Feature(BrowserPage):
 
+class Feature(BrowserPage):
+    
     """
     """
     
@@ -44,9 +47,10 @@ class FeatureCollection(BrowserPage):
     """
     
     def __call__(self):
+        sm = bool(self.request.form.get('sm', 0))
         xs = []
         ys = []
-        features = [wrap(o) for o in self.context.getFeatures()]
+        features = [wrap(o, sm) for o in self.context.getFeatures()]
         
         # get place bounds
         for f in features:
@@ -58,13 +62,13 @@ class FeatureCollection(BrowserPage):
         miny = min(ys)
         maxx = max(xs)
         maxy = max(ys)
-            
+        
         c = geojson.FeatureCollection(
             id=self.context.getId(),
             features=features,
             bbox=[minx, miny, maxx, maxy]
             )
-            
+        
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(c)        
