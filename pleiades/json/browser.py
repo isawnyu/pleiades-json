@@ -6,14 +6,13 @@ from zope.interface import implements
 from zope.publisher.browser import BrowserPage
 
 from zgeo.geographer.interfaces import IGeoreferenced
-from pleiades.openlayers.proj import Transform
+from pleiades.openlayers.proj import Transform, PROJ_900913
 
-
-PROJ_900913 = Transform(PROJ_900913)
+TGOOGLE = Transform(PROJ_900913)
 
 def wrap(ob):
     g = IGeoreferenced(ob)
-    geo = PROJ_900913.transform(g)
+    geo = TGOOGLE(g)
     geometry = geojson.GeoJSON.to_instance(
         dict(type=geo.type, coordinates=geo.coordinates)
         )
