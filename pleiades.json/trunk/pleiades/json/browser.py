@@ -1,47 +1,71 @@
 
 import geojson
+from shapely.geometry import asShape
 
 from zope.interface import implements
 from zope.publisher.browser import BrowserPage
 
 from zgeo.geographer.interfaces import IGeoreferenced
+from pleiades.openlayers.proj import Transform
 
 
+PROJ_900913 = Transform(PROJ_900913)
+
+def wrap(ob):
+    g = IGeoreferenced(ob)
+    geo = PROJ_900913.transform(g)
+    geometry = geojson.GeoJSON.to_instance(
+        dict(type=geo.type, coordinates=geo.coordinates)
+        )
+    return geojson.Feature(
+        id=ob.getId(),
+        geometry=geometry,
+        properties=dict(
+            title=ob.title,
+            description=ob.description,
+            link=ob.absolute_url()
+            )
+        )
+        
 class Feature(BrowserPage):
 
     """
-    Example:
-    
-      >>> class GeoThing(object):
-      ...     implements(IGeoreferenced)
-      ...     type='Point'
-      ...     coordinates=[0.0, 0.0]
-      ...     Title=u'Foo'
-      ...     Description=u'Foo thing'
-      ...     def getId(self):
-      ...         return 'foo'
-      ...     def absolute_url(self):
-      ...         return 'http://example.com/foo'
-      >>> thing = GeoThing()
-      >>> feature = Feature(thing, None)
-      >>> feature()
-      ''
-      
     """
+    
     def __call__(self):
-        geo = IGeoreferenced(self.context)
-        geometry = geojson.GeoJSON.to_instance(
-            dict(type=geo.type, coordinates=geo.coordinates)
-            )
-        f = geojson.Feature(
-            id=self.context.getId(),
-            geometry=geometry,
-            properties=dict(
-                title=self.context.Title,
-                description=self.context.Description,
-                link=self.context.absolute_url()
-                )
-            )
+        f = wrap(self.context)
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(f)
 
-# class Collection
+
+class FeatureCollection(BrowserPage):
+    
+    """
+    """
+    
+    def __call__(self):
+        xs = []
+        ys = []
+        features = [wrap(o) for o in self.context.getFeatures()]
+        
+        # get place bounds
+        for f in features:
+            shape = asShape(f.geometry)
+            b = shape.bounds
+            xs.extend([b[0], b[2]])
+            ys.extend([b[1], b[3]])
+        minx = min(xs)
+        miny = min(ys)
+        maxx = max(xs)
+        maxy = max(ys)
+            
+        c = geojson.FeatureCollection(
+            id=self.context.getId(),
+            features=features,
+            bbox=[minx, miny, maxx, maxy]
+            )
+            
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', 'application/json')
+        return geojson.dumps(c)        
