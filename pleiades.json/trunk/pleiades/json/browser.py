@@ -1,4 +1,3 @@
-
 import geojson
 from shapely.geometry import asShape
 
@@ -7,6 +6,7 @@ from zope.publisher.browser import BrowserPage
 
 from zgeo.geographer.interfaces import IGeoreferenced
 from pleiades.openlayers.proj import Transform, PROJ_900913
+
 
 TGOOGLE = Transform(PROJ_900913)
 
