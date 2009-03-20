@@ -28,7 +28,7 @@ setup(name='pleiades.json',
           'zgeo.plone.geographer',
           'pleiades.openlayers'
           ],
-      test_requires=[
+      tests_require=[
           'pleiades.workspace'
           ],
       entry_points="""
