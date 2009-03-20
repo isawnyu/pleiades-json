@@ -27,9 +27,12 @@ setup(name='pleiades.json',
           'setuptools',
           'geojson',
           'shapely',
+          'zgeo.plone.geographer',
           'pleiades.openlayers'
-          # -*- Extra requirements: -*-
-      ],
+          ],
+      test_requires=[
+          'pleiades.workspace'
+          ],
       entry_points="""
       # -*- Entry points: -*-
 
