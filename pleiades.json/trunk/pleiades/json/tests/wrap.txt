@@ -1,0 +1,14 @@
+
+  >>> class Mock(object):
+  ...     title = 'Mock'
+  ...     description = 'Mock object'
+  ...     def getId(self):
+  ...         return 'mock'
+  ...     def absolute_url(self):
+  ...         return 'http://example.com/mock'
+  >>> m = Mock()
+  >>> from pleiades.json.browser import wrap
+  >>> o = wrap(m)
+  >>> import geojson
+  >>> geojson.dumps(o)
+  '{"geometry": null, "type": "Feature", "properties": {"link": "http://example.com/mock", "description": "Mock object", "title": "Mock"}, "id": "mock"}'

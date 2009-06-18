@@ -11,24 +11,27 @@ from pleiades.openlayers.proj import Transform, PROJ_900913
 TGOOGLE = Transform(PROJ_900913)
 
 def wrap(ob, project_sm=False):
-    g = IGeoreferenced(ob)
-    if project_sm:
-        geo = TGOOGLE(g)
-    else:
-        geo = g
-    geometry = geojson.GeoJSON.to_instance(
-        dict(type=geo.type, coordinates=geo.coordinates)
-        )
+    try:    
+        g = IGeoreferenced(ob)
+        if project_sm:
+            geo = TGOOGLE(g)
+        else:
+            geo = g
+        geometry = geojson.GeoJSON.to_instance(
+                    dict(type=geo.type, coordinates=geo.coordinates)
+                    )
+    except (TypeError, ValueError):
+        geometry = None
     return geojson.Feature(
-        id=ob.getId(),
-        geometry=geometry,
-        properties=dict(
-            title=ob.title,
-            description=ob.description,
-            link=ob.absolute_url()
-            )
-        )
-
+                    id=ob.getId(),
+                    properties=dict(
+                        title=ob.title,
+                        description=ob.description,
+                        link=ob.absolute_url()
+                        ),
+                    geometry=geometry
+                    )
+        
 class Feature(BrowserPage):
     
     """
@@ -54,10 +57,11 @@ class FeatureCollection(BrowserPage):
         
         # get place bounds
         for f in features:
-            shape = asShape(f.geometry)
-            b = shape.bounds
-            xs.extend([b[0], b[2]])
-            ys.extend([b[1], b[3]])
+            if f.geometry:
+                shape = asShape(f.geometry)
+                b = shape.bounds
+                xs.extend([b[0], b[2]])
+                ys.extend([b[1], b[3]])
         minx = min(xs)
         miny = min(ys)
         maxx = max(xs)
@@ -71,4 +75,4 @@ class FeatureCollection(BrowserPage):
         
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
-        return geojson.dumps(c)        
+        return geojson.dumps(c)
