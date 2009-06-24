@@ -62,15 +62,16 @@ class FeatureCollection(BrowserPage):
                 b = shape.bounds
                 xs.extend([b[0], b[2]])
                 ys.extend([b[1], b[3]])
-        minx = min(xs)
-        miny = min(ys)
-        maxx = max(xs)
-        maxy = max(ys)
+        
+        if len(xs) * len(ys) > 0:
+            bbox = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            bbox = None
         
         c = geojson.FeatureCollection(
             id=self.context.getId(),
             features=features,
-            bbox=[minx, miny, maxx, maxy]
+            bbox=bbox
             )
         
         self.request.response.setStatus(200)
