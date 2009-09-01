@@ -1,0 +1,17 @@
+Test serialization of Place to JSON
+===================================
+    
+    >>> from Products.PloneTestCase.setup import portal_owner, default_password
+
+A place without component features should be represented as a feature
+    
+    >>> r = http(r"""
+    ... GET /plone/places/2/@@json HTTP/1.1
+    ... Authorization: Basic %s:%s
+    ... """ % (portal_owner, default_password), handle_errors=False)
+    >>> r.getStatus()
+    200
+    >>> r.getHeader('Content-Type')
+    'application/json'
+    >>> print r.getBody()
+    {"features": [{"geometry": {"type": "Point", "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/2", "description": "", "title": "Ninoe"}, "id": "2"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "2"}

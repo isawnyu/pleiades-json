@@ -51,7 +51,11 @@ def test_suite():
             'wrap.txt', package='pleiades.json.tests',
             test_class=PleiadesJSONFunctionalTestCase
             ),
-
+            
+        ztc.FunctionalDocFileSuite(
+            'place.txt', package='pleiades.json.tests',
+            test_class=PleiadesJSONFunctionalTestCase
+            ),
 
         #ztc.FunctionalDocFileSuite(
         #    'large-folder-kml.txt', package='zgeo.plone.kml.tests',
