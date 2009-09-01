@@ -60,3 +60,14 @@ class PleiadesJSONFunctionalTestCase(ContentFunctionalTestCase):
     """We use this base class for all the tests in this package. If necessary,
     we can put common utility or setup code in here.
     """
+    def afterSetUp(self):
+        super(PleiadesJSONFunctionalTestCase, self).afterSetUp()
+        pid = self.places.invokeFactory('Place', '2', title='Ninoe')
+        p = self.places[pid]
+        nameAttested = u'\u039d\u03b9\u03bd\u1f79\u03b7'.encode('utf-8')
+        nid = p.invokeFactory('Name', 'ninoe', nameAttested=nameAttested, nameLanguage='grc', nameType='geographic', accuracy='accurate', completeness='complete')
+        attestations = p[nid].Schema()['attestations']
+        attestations.resize(1)
+        p[nid].update(attestations=[dict(confidence='certain', timePeriod='roman')])
+        lid = p.invokeFactory('Location', 'position', title='Point 1', geometry='Point:[-86.4808333333333, 34.769722222222]')
+        

@@ -7,6 +7,8 @@ from zope.publisher.browser import BrowserPage
 from zgeo.geographer.interfaces import IGeoreferenced
 from pleiades.openlayers.proj import Transform, PROJ_900913
 
+from Products.PleiadesEntity.geo import FeatureGeoItem
+
 
 TGOOGLE = Transform(PROJ_900913)
 
@@ -38,7 +40,8 @@ class Feature(BrowserPage):
     """
     
     def __call__(self):
-        f = wrap(self.context)
+        sm = bool(self.request.form.get('sm', 0))
+        f = wrap(self.context, sm)
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(f)
@@ -54,7 +57,10 @@ class FeatureCollection(BrowserPage):
         xs = []
         ys = []
         features = [wrap(o, sm) for o in self.context.getFeatures()]
-        
+        x = self.context.getLocations()
+        if len(x) > 0:
+            features = [wrap(self.context, sm)] + features
+            
         # get place bounds
         for f in features:
             if f.geometry:
@@ -70,7 +76,7 @@ class FeatureCollection(BrowserPage):
         
         c = geojson.FeatureCollection(
             id=self.context.getId(),
-            features=features,
+            features=list(features),
             bbox=bbox
             )
         
