@@ -98,15 +98,17 @@ class FeatureCollection(BrowserPage):
         dc_coverage = self.context.getLocation() 
         if len(x) > 0:
             features = [wrap(self.context, sm)] + features
-        elif dc_coverage.startswith('http://atlantides.org/capgrids'):
-            s = dc_coverage.rstrip('/')
-            mapid, gridsquare = s.split('/')[-2:]
-            grid = Grid(mapid, gridsquare)
-            features = [wrap(GridFeature(grid, self.request), sm)] + features
+        if len(x) == 0 or not x[0].getGeometry():
+            if dc_coverage.startswith('http://atlantides.org/capgrids'):
+                s = dc_coverage.rstrip('/')
+                mapid, gridsquare = s.split('/')[-2:]
+                grid = Grid(mapid, gridsquare)
+                features = features + \
+                            [wrap(GridFeature(grid, self.request), sm)]
                         
         # get place bounds
         for f in features:
-            if f.geometry:
+            if f.geometry and hasattr(f.geometry, '__geo_interface__'):
                 shape = asShape(f.geometry)
                 b = shape.bounds
                 xs.extend([b[0], b[2]])
