@@ -72,4 +72,6 @@ class PleiadesJSONFunctionalTestCase(ContentFunctionalTestCase):
         lid = p.invokeFactory('Location', 'position', title='Point 1', geometry='Point:[-86.4808333333333, 34.769722222222]')
 
         pid = self.places.invokeFactory('Place', '3', title='Ninoe', location='http://atlantides.org/capgrids/35/E2')
+        p = self.places[pid]
+        lid = p.invokeFactory('Location', 'undetermined', title='Undetermined location', geometry=None)
     
