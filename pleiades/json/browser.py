@@ -14,15 +14,16 @@ from Products.PleiadesEntity.geo import FeatureGeoItem
 TGOOGLE = Transform(PROJ_900913)
 
 def wrap(ob, project_sm=False):
-    try:    
-        g = IGeoreferenced(ob)
+    try:
+        gi = IGeoreferenced(ob).__geo_interface__
+        g = gi.get('geometry', gi)
         if project_sm:
             geo = TGOOGLE(g)
         else:
             geo = g
-        geometry = geojson.GeoJSON.to_instance(
-                    dict(type=geo.type, coordinates=geo.coordinates)
-                    )
+        geometry = geojson.GeoJSON.to_instance(geo)
+                    #dict(type=geo.type, coordinates=geo.coordinates)
+                    #)
     except (TypeError, ValueError):
         geometry = None
     return geojson.Feature(
@@ -34,7 +35,7 @@ def wrap(ob, project_sm=False):
                         ),
                     geometry=geometry
                     )
-        
+
 class Feature(BrowserPage):
     
     """
@@ -55,10 +56,10 @@ class GridFeature(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        
+    
     def getId(self):
         return self.context.id
-        
+    
     @property
     def title(self):
         return unicode(self.context.Title())
@@ -67,13 +68,13 @@ class GridFeature(object):
     def description(self):
         return unicode(self.context.Description())
     
-    def absolute_url(self): 
+    def absolute_url(self):
         return self.context.id
-
+    
     @property
     def type(self):
         return self.context.type
-        
+    
     @property
     def coordinates(self):
         return self.context.coordinates
@@ -81,7 +82,7 @@ class GridFeature(object):
     @property
     def __geo_interface__(self):
         return dict(type=self.context.type, coordinates=self.context.coordinates)
-    
+
 
 class FeatureCollection(BrowserPage):
     
@@ -93,19 +94,10 @@ class FeatureCollection(BrowserPage):
         xs = []
         ys = []
         features = [wrap(o, sm) for o in self.context.getFeatures()]
-        
-        x = self.context.getLocations()
-        dc_coverage = self.context.getLocation() 
+        x = list(self.context.getLocations())
         if len(x) > 0:
             features = [wrap(self.context, sm)] + features
-        if len(x) == 0 or not x[0].getGeometry():
-            if dc_coverage.startswith('http://atlantides.org/capgrids'):
-                s = dc_coverage.rstrip('/')
-                mapid, gridsquare = s.split('/')[-2:]
-                grid = Grid(mapid, gridsquare)
-                features = features + \
-                            [wrap(GridFeature(grid, self.request), sm)]
-                        
+        
         # get place bounds
         for f in features:
             if f.geometry and hasattr(f.geometry, '__geo_interface__'):
