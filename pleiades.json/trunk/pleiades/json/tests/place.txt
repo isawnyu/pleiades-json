@@ -27,5 +27,5 @@ A place with only a BAtlas citation
     >>> r.getHeader('Content-Type')
     'application/json'
     >>> print r.getBody()
-    {"features": [{"geometry": null, "type": "Feature", "properties": {"link": "http://localhost/plone/places/3", "description": "", "title": "Ninoe"}, "id": "3"}, {"geometry": {"type": "Polygon", "coordinates": [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]}, "type": "Feature", "properties": {"link": "http://atlantides.org/capgrids/35/E2", "description": "Bounding polygon of Barrington Atlas map 35, grid square E2", "title": "Barrington Atlas map 35, grid square E2"}, "id": "http://atlantides.org/capgrids/35/E2"}], "type": "FeatureCollection", "bbox": [12.0, 32.0, 13.0, 33.0], "id": "3"}
+    {"features": [{"geometry": {"type": "Polygon", "coordinates": [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/3", "description": "", "title": "Ninoe"}, "id": "3"}], "type": "FeatureCollection", "bbox": [12.0, 32.0, 13.0, 33.0], "id": "3"}
     
