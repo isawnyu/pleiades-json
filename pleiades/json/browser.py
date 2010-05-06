@@ -101,7 +101,6 @@ class FeatureCollection(BrowserPage):
         sm = bool(self.request.form.get('sm', 0))
         xs = []
         ys = []
-        features = [wrap(o, sm) for o in self.context.getFeatures()]
         x = list(self.context.getLocations())
         if len(x) > 0:
             features = [wrap(ob, sm) for ob in x]
