@@ -104,8 +104,10 @@ class FeatureCollection(BrowserPage):
         features = [wrap(o, sm) for o in self.context.getFeatures()]
         x = list(self.context.getLocations())
         if len(x) > 0:
-            features = [wrap(ob, sm) for ob in x] + features
-        
+            features = [wrap(ob, sm) for ob in x]
+        else:
+            features = [wrap(ob, sm) for ob in self.context.getFeatures()] \
+                     + [wrap(ob, sm) for ob in self.context.getParts()] 
         # get place bounds
         for f in features:
             if f.geometry and hasattr(f.geometry, '__geo_interface__'):
