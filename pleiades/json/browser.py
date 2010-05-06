@@ -1,8 +1,8 @@
 import geojson
 from shapely.geometry import asShape
 
-from zope.interface import implements
-from zope.publisher.browser import BrowserPage
+from zope.interface import implements, Interface, Attribute
+from zope.publisher.browser import BrowserPage, BrowserView
 
 from zgeo.geographer.interfaces import IGeoreferenced
 from pleiades.openlayers.proj import Transform, PROJ_900913
@@ -21,6 +21,7 @@ def wrap(ob, project_sm=False):
             geo = TGOOGLE(g)
         else:
             geo = g
+        
         geometry = geojson.GeoJSON.to_instance(geo)
                     #dict(type=geo.type, coordinates=geo.coordinates)
                     #)
@@ -35,18 +36,25 @@ def wrap(ob, project_sm=False):
                         ),
                     geometry=geometry
                     )
+        
 
-class Feature(BrowserPage):
+class IJSON(Interface):
+    def to_json():
+        """As JSON"""
+            
     
-    """
-    """
+class Feature(BrowserView):
+    implements(IJSON)
     
-    def __call__(self):
+    def to_json(self):
         sm = bool(self.request.form.get('sm', 0))
         f = wrap(self.context, sm)
+        return geojson.dumps(f)
+        
+    def __call__(self):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
-        return geojson.dumps(f)
+        return self.to_json()
 
 
 class GridFeature(object):
@@ -96,7 +104,7 @@ class FeatureCollection(BrowserPage):
         features = [wrap(o, sm) for o in self.context.getFeatures()]
         x = list(self.context.getLocations())
         if len(x) > 0:
-            features = [wrap(self.context, sm)] + features
+            features = [wrap(ob, sm) for ob in x] + features
         
         # get place bounds
         for f in features:

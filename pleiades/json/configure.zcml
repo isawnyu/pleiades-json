@@ -17,5 +17,21 @@
     class=".browser.Feature"
     permission="zope2.View"
     />
-        
+
+  <browser:page
+    for="Products.PleiadesEntity.content.interfaces.ILocation"
+    name="json"
+    class=".browser.Feature"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    for="Products.PleiadesEntity.content.interfaces.ILocation"
+    name="jsonob"
+    class=".browser.Feature"
+    permission="zope2.View"
+    attribute="to_json"
+    allowed_interface=".browser.IJSON"
+    />
+  
 </configure>

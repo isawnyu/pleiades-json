@@ -14,7 +14,7 @@ A place without component features should be represented as a feature
     >>> r.getHeader('Content-Type')
     'application/json'
     >>> print r.getBody()
-    {"features": [{"geometry": {"type": "Point", "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/2", "description": "", "title": "Ninoe"}, "id": "2"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "2"}
+    {"features": [{"geometry": {"type": "Point", "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/2/position", "description": "", "title": "Point 1"}, "id": "position"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "2"}
     
 A place with only a BAtlas citation
     
@@ -27,5 +27,5 @@ A place with only a BAtlas citation
     >>> r.getHeader('Content-Type')
     'application/json'
     >>> print r.getBody()
-    {"features": [{"geometry": {"type": "Polygon", "coordinates": [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/3", "description": "", "title": "Ninoe"}, "id": "3"}], "type": "FeatureCollection", "bbox": [12.0, 32.0, 13.0, 33.0], "id": "3"}
+    {"features": [{"geometry": {"type": "Polygon", "coordinates": [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/3/undetermined", "description": "", "title": "Undetermined location"}, "id": "undetermined"}], "type": "FeatureCollection", "bbox": [12.0, 32.0, 13.0, 33.0], "id": "3"}
     
