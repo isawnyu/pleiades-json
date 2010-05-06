@@ -92,6 +92,14 @@ class GridFeature(object):
         return dict(type=self.context.type, coordinates=self.context.coordinates)
 
 
+class W(object):
+    # spatial 'within' wrapper for use as a sorting key
+    def __init__(self, o):
+        self.o = o
+    def __lt__(self, other):
+        return asShape(self.o).within(asShape(other.o))
+
+
 class FeatureCollection(BrowserPage):
     
     """
@@ -122,7 +130,7 @@ class FeatureCollection(BrowserPage):
         
         c = geojson.FeatureCollection(
             id=self.context.getId(),
-            features=list(features),
+            features=sorted(features, key=W, reverse=True),
             bbox=bbox
             )
         
