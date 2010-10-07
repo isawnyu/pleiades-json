@@ -5,6 +5,13 @@
     i18n_domain="pleiades.json">
 
   <browser:page
+    for="Products.PleiadesEntity.content.interfaces.IPlaceContainer"
+    name="json-georeferenced"
+    class=".browser.PlaceContainerFeatureCollection"
+    permission="zope2.View"
+    />
+
+  <browser:page
     for="Products.PleiadesEntity.content.interfaces.IPlace"
     name="json"
     class=".browser.FeatureCollection"

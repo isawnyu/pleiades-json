@@ -8,7 +8,7 @@ from zgeo.geographer.interfaces import IGeoreferenced
 from pleiades.openlayers.proj import Transform, PROJ_900913
 from pleiades.capgrids import Grid
 
-from Products.PleiadesEntity.geo import FeatureGeoItem
+from Products.PleiadesEntity.geo import FeatureGeoItem, NotLocatedError
 
 
 TGOOGLE = Transform(PROJ_900913)
@@ -137,3 +137,51 @@ class FeatureCollection(BrowserPage):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(c)
+
+def wrap2(ob):
+    try:
+        gi = IGeoreferenced(ob).__geo_interface__
+        geom = gi.get('geometry', gi)
+        shape = asShape(geom)
+        return dict(
+            id=ob.UID(),
+            bbox=shape.bounds,
+            properties=dict(
+                pid=ob.getId(),
+                title=ob.title,
+                description=ob.description,
+                ),
+            geometry=geom
+            )
+    except (NotLocatedError):
+        return None
+
+class PlaceContainerFeatureCollection(BrowserPage):
+    
+    """
+    """
+    
+    def __call__(self):
+        xs = []
+        ys = []
+        def generate():
+            for ob in self.context.values():
+                w = wrap2(ob)
+                if w is not None:
+                    b = w["bbox"]
+                    xs.extend([b[0], b[2]])
+                    ys.extend([b[1], b[3]])
+                    yield w
+        features = list(p for p in generate())
+        if len(xs) * len(ys) > 0:
+            bbox = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            bbox = None
+        c = geojson.FeatureCollection(
+            features=features,
+            bbox=bbox
+            )        
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', 'application/json')
+        return geojson.dumps(c)
+
