@@ -153,7 +153,7 @@ def wrap2(ob):
                 ),
             geometry=geom
             )
-    except (NotLocatedError):
+    except (AttributeError, NotLocatedError):
         return None
 
 class PlaceContainerFeatureCollection(BrowserPage):
