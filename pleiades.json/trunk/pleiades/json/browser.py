@@ -141,17 +141,15 @@ class FeatureCollection(BrowserPage):
 def wrap2(ob):
     try:
         gi = IGeoreferenced(ob).__geo_interface__
-        geom = gi.get('geometry', gi)
-        shape = asShape(geom)
         return dict(
             id=ob.UID(),
-            bbox=shape.bounds,
+            bbox=gi['bbox'],
             properties=dict(
                 pid=ob.getId(),
-                title=ob.title,
-                description=ob.description,
+                title=ob.Title(),
+                description=ob.Description(),
                 ),
-            geometry=geom
+            geometry=gi['geometry']
             )
     except (AttributeError, NotLocatedError):
         return None
