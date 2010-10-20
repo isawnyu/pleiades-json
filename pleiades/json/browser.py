@@ -138,22 +138,6 @@ class FeatureCollection(BrowserPage):
         self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(c)
 
-def wrap2(ob):
-    try:
-        gi = IGeoreferenced(ob).__geo_interface__
-        return dict(
-            id=ob.UID(),
-            bbox=gi['bbox'],
-            properties=dict(
-                pid=ob.getId(),
-                title=ob.Title(),
-                description=ob.Description(),
-                ),
-            geometry=gi['geometry']
-            )
-    except (AttributeError, NotLocatedError):
-        return None
-
 class PlaceContainerFeatureCollection(BrowserPage):
     
     """
@@ -162,15 +146,35 @@ class PlaceContainerFeatureCollection(BrowserPage):
     def __call__(self):
         xs = []
         ys = []
+        catalog = self.context.portal_catalog
+        portal_path = self.context.portal_url.getPortalObject().getPhysicalPath()
+        def wrap2(brain):
+            try:
+                ob = brain.getObject()
+                rel_path = ob.getPhysicalPath()[len(portal_path):]
+                g = IGeoreferenced(ob)
+                return dict(
+                    id=str(brain.getRID()),
+                    bbox=g.bounds,
+                    properties=dict(
+                        path='/'.join(rel_path),
+                        title=brain.Title,
+                        description=ob.Description() or ob.getDescription(),
+                        type=brain.portal_type,
+                        ),
+                    geometry=dict(type=g.type, coordinates=g.coordinates)
+                    )
+            except (AttributeError, NotLocatedError, TypeError):
+                return None
         def generate():
-            for ob in self.context.values():
-                w = wrap2(ob)
+            for brain in catalog(portal_type={'query': ['Place', 'Location']}):
+                w = wrap2(brain)
                 if w is not None:
                     b = w["bbox"]
                     xs.extend([b[0], b[2]])
                     ys.extend([b[1], b[3]])
                     yield w
-        features = list(p for p in generate())
+        features = list(item for item in generate())
         if len(xs) * len(ys) > 0:
             bbox = [min(xs), min(ys), max(xs), max(ys)]
         else:
