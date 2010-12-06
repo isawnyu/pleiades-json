@@ -8,7 +8,7 @@ from zgeo.geographer.interfaces import IGeoreferenced
 from pleiades.openlayers.proj import Transform, PROJ_900913
 from pleiades.capgrids import Grid
 
-from Products.PleiadesEntity.geo import FeatureGeoItem, NotLocatedError
+from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
 
 
 TGOOGLE = Transform(PROJ_900913)
