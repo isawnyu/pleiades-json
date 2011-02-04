@@ -11,34 +11,20 @@
     permission="zope2.View"
     />
 
-  <browser:page
+  <browser:view
     for="Products.PleiadesEntity.content.interfaces.IPlace"
     name="json"
     class=".browser.FeatureCollection"
     permission="zope2.View"
-    />
-
-  <browser:page
-    for="Products.PleiadesEntity.content.interfaces.IFeature"
-    name="json"
-    class=".browser.Feature"
-    permission="zope2.View"
-    />
-
-  <browser:page
-    for="Products.PleiadesEntity.content.interfaces.ILocation"
-    name="json"
-    class=".browser.Feature"
-    permission="zope2.View"
-    />
-
-  <browser:page
-    for="Products.PleiadesEntity.content.interfaces.ILocation"
-    name="jsonob"
-    class=".browser.Feature"
-    permission="zope2.View"
-    attribute="to_json"
     allowed_interface=".browser.IJSON"
     />
-  
+
+  <browser:view
+    for="Products.PleiadesEntity.content.interfaces.ILocation"
+    name="json"
+    class=".browser.Feature"
+    permission="zope2.View"
+    allowed_interface=".browser.IJSON"
+    />
+
 </configure>
