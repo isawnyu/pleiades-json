@@ -1,14 +1,16 @@
+
+from urllib import quote
+
 import geojson
 from shapely.geometry import asShape
 
+from pleiades.capgrids import Grid
+from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
+from pleiades.openlayers.proj import Transform, PROJ_900913
+from plone.memoize.instance import memoize
+from zgeo.geographer.interfaces import IGeoreferenced
 from zope.interface import implements, Interface, Attribute
 from zope.publisher.browser import BrowserPage, BrowserView
-
-from zgeo.geographer.interfaces import IGeoreferenced
-from pleiades.openlayers.proj import Transform, PROJ_900913
-from pleiades.capgrids import Grid
-
-from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
 
 
 TGOOGLE = Transform(PROJ_900913)
@@ -36,26 +38,6 @@ def wrap(ob, project_sm=False):
                         ),
                     geometry=geometry
                     )
-        
-
-class IJSON(Interface):
-    def to_json():
-        """As JSON"""
-            
-    
-class Feature(BrowserView):
-    implements(IJSON)
-    
-    def to_json(self):
-        sm = bool(self.request.form.get('sm', 0))
-        f = wrap(self.context, sm)
-        return geojson.dumps(f)
-        
-    def __call__(self):
-        self.request.response.setStatus(200)
-        self.request.response.setHeader('Content-Type', 'application/json')
-        return self.to_json()
-
 
 class GridFeature(object):
     
@@ -89,7 +71,8 @@ class GridFeature(object):
     
     @property
     def __geo_interface__(self):
-        return dict(type=self.context.type, coordinates=self.context.coordinates)
+        return dict(
+            type=self.context.type, coordinates=self.context.coordinates)
 
 
 class W(object):
@@ -100,12 +83,54 @@ class W(object):
         return asShape(self.o.geometry).within(asShape(other.o.geometry))
 
 
-class FeatureCollection(BrowserPage):
-    
-    """
-    """
-    
+class IJSON(Interface):
+    def mapping():
+        """As dict"""
+    def value():
+        """As JSON"""
+    def data_uri():
+        """JSON data URI"""
+
+
+class JsonBase(BrowserView):
+    implements(IJSON)
+
+    def mapping(self):
+        raise NotImplementedError
+
+    def value(self):
+        raise NotImplementedError
+
+    def data_uri(self):
+        return "data:application/json," + quote(self.value())
+
+    # backwards compatibility
+    to_json = value
+
+
+class Feature(JsonBase):
+
+    @memoize
+    def _data(self):
+        sm = bool(self.request.form.get('sm', 0))
+        return wrap(self.context, sm)
+        
+    def mapping(self):
+        return dict(self._data())
+
+    def value(self):
+        return geojson.dumps(self._data())
+
     def __call__(self):
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', 'application/json')
+        return self.value()
+
+
+class FeatureCollection(JsonBase):
+
+    @memoize
+    def _data(self):
         sm = bool(self.request.form.get('sm', 0))
         xs = []
         ys = []
@@ -128,15 +153,23 @@ class FeatureCollection(BrowserPage):
         else:
             bbox = None
         
-        c = geojson.FeatureCollection(
+        return geojson.FeatureCollection(
             id=self.context.getId(),
             features=sorted(features, key=W, reverse=True),
             bbox=bbox
             )
-        
+
+    def mapping(self):
+        return dict(self._data())
+
+    def value(self):
+        return geojson.dumps(self._data())
+
+    def __call__(self):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
-        return geojson.dumps(c)
+        return self.value()
+
 
 class PlaceContainerFeatureCollection(BrowserPage):
     

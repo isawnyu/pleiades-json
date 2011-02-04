@@ -14,7 +14,7 @@ Request un-transformed GeoJSON
     >>> r.getHeader('Content-Type')
     'application/json'
     >>> print r.getBody()
-    {"features": [{"geometry": {"type": "Point", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/features/1", "description": "", "title": "Ninoe"}, "id": "1"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "1"}
+    {"features": [{"geometry": {"type": "Point", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/1/location", "description": "", "title": "Point 1"}, "id": "location"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "1"}
 
 Request spherical mercator GeoJSON
     
@@ -27,4 +27,5 @@ Request spherical mercator GeoJSON
     >>> r.getHeader('Content-Type')
     'application/json'
     >>> print r.getBody()
-    {"features": [{"geometry": {"type": "Point", "coordinates": [-9627002.3300446216, 4132631.1811658409]}, "type": "Feature", "properties": {"link": "http://localhost/plone/features/1", "description": "", "title": "Ninoe"}, "id": "1"}], "type": "FeatureCollection", "bbox": [-9627002.3300446216, 4132631.1811658409, -9627002.3300446216, 4132631.1811658409], "id": "1"}    
+    {"features": [{"geometry": {"type": "Point", "coordinates": [-9627002.3300446216, 4132631.1811658409]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/1/location", "description": "", "title": "Point 1"}, "id": "location"}], "type": "FeatureCollection", "bbox": [-9627002.3300446216, 4132631.1811658409, -9627002.3300446216, 4132631.1811658409], "id": "1"}
+
