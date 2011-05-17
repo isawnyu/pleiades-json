@@ -23,11 +23,8 @@ def wrap(ob, project_sm=False):
             geo = TGOOGLE(g)
         else:
             geo = g
-        
         geometry = geojson.GeoJSON.to_instance(geo)
-                    #dict(type=geo.type, coordinates=geo.coordinates)
-                    #)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, NotLocatedError):
         geometry = None
     return geojson.Feature(
                     id=ob.getId(),
