@@ -12,3 +12,4 @@
   >>> import geojson
   >>> geojson.dumps(o)
   '{"geometry": null, "type": "Feature", "properties": {"link": "http://example.com/mock", "description": "Mock object", "title": "Mock"}, "id": "mock"}'
+
