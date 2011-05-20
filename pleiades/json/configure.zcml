@@ -20,6 +20,14 @@
     />
 
   <browser:view
+    for="Products.PleiadesEntity.content.interfaces.IPlace"
+    name="r-neighbors-json"
+    class=".browser.RoughlyLocatedFeatureCollection"
+    permission="zope2.View"
+    allowed_interface=".browser.IJSON"
+    />
+
+  <browser:view
     for="Products.PleiadesEntity.content.interfaces.ILocation"
     name="json"
     class=".browser.Feature"

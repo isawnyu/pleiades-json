@@ -56,10 +56,6 @@ def test_suite():
             'place.txt', package='pleiades.json.tests',
             test_class=PleiadesJSONFunctionalTestCase
             ),
-        doctestunit.DocFileSuite(
-            'rough.txt', package='pleiades.json.tests',
-            setUp=testing.setUp, tearDown=testing.tearDown),
-
         #ztc.FunctionalDocFileSuite(
         #    'large-folder-kml.txt', package='zgeo.plone.kml.tests',
          #   test_class=PloneKMLFunctionalTestCase

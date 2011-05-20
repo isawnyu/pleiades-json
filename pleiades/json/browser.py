@@ -1,4 +1,4 @@
-
+import logging
 from math import fabs, atan2, cos, pi, sin, sqrt
 from urllib import quote
 
@@ -6,13 +6,19 @@ import geojson
 from pyproj import Proj
 from shapely.geometry import asShape, LineString, Point
 
+from Products.CMFCore.utils import getToolByName
+from zope.interface import implements, Interface, Attribute
+from zope.publisher.browser import BrowserPage, BrowserView
+from ZTUtils import make_query
+
 from pleiades.capgrids import Grid
 from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
+from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
 from plone.memoize.instance import memoize
 from zgeo.geographer.interfaces import IGeoreferenced
-from zope.interface import implements, Interface, Attribute
-from zope.publisher.browser import BrowserPage, BrowserView
+
+log = logging.getLogger("pleiades.json")
 
 TGOOGLE = Transform(PROJ_900913)
 
@@ -168,81 +174,6 @@ class FeatureCollection(JsonBase):
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.value()
 
-def stick_interpolate_box(cc, bbox):
-    """Given a context centroid and a box, find the bisecting line that goes 
-    through each centroid, interpolated to the context centroid point."""
-
-    TOLERANCE = 1.0e-6
-    
-    # transform to a coordinate system centered on ccx, ccy
-    llx, lly, urx, ury = bbox
-    ccx, ccy = cc
-    llx -= ccx
-    urx -= ccx
-    lly -= ccy
-    ury -= ccy
-
-    # Centroid of the transformed box
-    cx = (llx + urx)/2.0
-    cy = (lly + ury)/2.0
-
-    W = urx - llx
-    H = ury - lly
-
-    # If the bbox centroid is at the origin, things collapse
-    if (fabs(cx) < TOLERANCE and fabs(cy) < TOLERANCE):
-        rx = ry = sx = sy = 0.0
-    elif (fabs(cx) >= TOLERANCE and fabs(cy) >= TOLERANCE):
-        tantheta = fabs(cy/cx)
-        def sign(x):
-            if x < 0: return -1.0
-            else: return 1.0
-
-        # There may be ways to figure out whether the bisector goes through a 
-        # bottom or side of the box, but 
-        if W > H:
-            deltay = H/2.0
-            deltax = deltay/tantheta
-        else:
-            deltax = W/2.0
-            deltay = deltax*tantheta
-
-        shiftx = sign(cx)*deltax
-        shifty = sign(cy)*deltax
-        rx = cx - shiftx
-        sx = cx + shiftx
-        ry = cy - shifty
-        sy = cy + shifty
-        if cx > 0:
-            rx = max(0.0, rx)
-        else:
-            rx = min(0.0, rx)
-        if cy > 0:
-            ry = min(0.0, ry)
-        else:
-            ry = max(0.0, ry)
-    # Our stick is on one of the axes
-    else:
-        # On the x axis
-        if fabs(cx) < TOLERANCE:
-            rx = sx = 0.0
-            if cy > 0:
-                ry = max(0.0, lly)
-                sy = ury
-            else:
-                ry = min(0.0, ury)
-                sy = lly
-        # On the y axis
-        if fabs(cy) < TOLERANCE:
-            ry = sy = 0.0
-            if cx > 0:
-                rx = max(0.0, llx)
-                sx = urx
-            else:
-                rx = min(0.0, urx)
-                sx = llx
-    return (rx+ccx, ry+ccy), (sx+ccx, sy+ccy)
-
 def sign(x):
     if x < 0:
         return -1.0
@@ -321,34 +252,42 @@ def stick_interpolate(cc, bbox):
                 sx = cx-R
     return (rx+ccx, ry+ccy), (sx+ccx, sy+ccy)
 
-def aggregate(context_geom, portal_url, geom, objects):
+def aggregate(context_centroid, portal_url, geom_bbox, objects):
     """A feature that is related to roughly located objects"""
-    bbox = geom.bounds
+    bbox = geom_bbox #geom.bounds
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
-    centroid = geom.centroid
 
     query = {
         'location_precision': ['rough'],
-        'path': {'query': [ob.path for ob in self.objects],
+        'path': {'query': [ob.context.getPath() for ob in objects],
                  'depth': 0}
         }
+
     props = dict(
         title="Aggregation of roughly located objects",
-        description="%s degree by %s degree cell" % (box[2]-box[0], box[3]-box[1]),
+        snippet="%s degree by %s degree cell" % (
+            bbox[2]-bbox[0], bbox[3]-bbox[1]),
         link="%s/search?%s" % (portal_url, make_query(query)))
+    
+    description = "".join(
+        "<li><a href=\"%s\">%s</a> (<em>%s; %s</em>): %s</li>" % (
+            ob.alternate_link, 
+            ob.name, 
+            ob.featureTypes, 
+            ob.timePeriods, 
+            ob.altLocation or ""))
+    props['description'] = "<div><ul>" + description + "</ul></div>"
 
     # Compute the "sticks"
     # First, project to spherical mercator
-    context_centroid = context_geom.centroid
-    cclon = context_centroid.x
-    cclat = context_centroid.y
+    cclon, cclat = context_centroid
 
     tsm = Proj(PROJ_900913)
     
     (ccx, llx, urx), (ccy, lly, ury) = tsm(
         [cclon, bbox[0], bbox[2]], 
-        [cclat, bbox[1], bbox[2]])
+        [cclat, bbox[1], bbox[3]])
 
     (rx, ry), (sx, sy) = stick_interpolate((ccx, ccy), (llx, lly, urx, ury))
 
@@ -358,13 +297,13 @@ def aggregate(context_geom, portal_url, geom, objects):
 
     return dict(
         type="pleiades.stoa.org.BoxBoundedRoughFeature",
-        id=repr(geom),
+        id=repr(bbox),
         properties=props,
         bbox=bbox,
-        stick=dict(type="LineString", coordinates=[[rlon, rlat], [slon, slat]]))
+        geometry=dict(type="LineString", coordinates=[[rlon, rlat], [slon, slat]]))
 
 
-class RoughlyLocatedFeatureCollection(FeatureCollection):
+class RoughlyLocatedFeatureCollection(JsonBase):
     """."""
 
     def criteria(self, g):
@@ -374,13 +313,14 @@ class RoughlyLocatedFeatureCollection(FeatureCollection):
             location_precision={'query': ['rough']}
             )
 
-    @property
-    def features(self):
+    def getFeatures(self):
+        portal_url = getToolByName(self.context, 'portal_url')()
         catalog = getToolByName(self.context, 'portal_catalog')
         try:
             g = IGeoreferenced(self.context)
+            context_centroid = asShape(g.geo).centroid
         except NotLocatedError:
-            raise StopIteration
+            return []
         log.debug("Criteria: %s", self.criteria(g))
         geoms = {}
         objects = {}
@@ -388,12 +328,13 @@ class RoughlyLocatedFeatureCollection(FeatureCollection):
             if brain.getId == self.context.getId():
                 # skip self
                 continue
-            item = dict(
-                id=brain.getId,
-                path=brain.getPath(),
-                title=brain.Title,
-                description=brain.Description,
-                link="http://pleiades.stoa.org/places/" + brain.getId)
+            item = PleiadesBrainPlacemark(brain, self.request) 
+            #dict(
+            #    id=brain.getId,
+            #    path=brain.getPath(),
+            #    title=brain.Title,
+            #    description=brain.Description,
+            #    link="http://pleiades.stoa.org/places/" + brain.getId)
             geo = brain.zgeo_geometry
             if geo and geo.has_key('type') and geo.has_key('coordinates'):
                 # key = (geo['type'], geo['coordinates'])
@@ -406,8 +347,9 @@ class RoughlyLocatedFeatureCollection(FeatureCollection):
                     objects[key] = [item]
         return sorted(
             [aggregate(
-                self.context, 
-                asShape(geoms[key]), 
+                (context_centroid.x, context_centroid.y),
+                portal_url,
+                asShape(geoms[key]).bounds, 
                 val) for key, val in objects.items()],
                 key=W,
                 reverse=True)
@@ -418,7 +360,8 @@ class RoughlyLocatedFeatureCollection(FeatureCollection):
         xs = []
         ys = []
         # get place bounds
-        for f in self.features:
+        features = self.getFeatures()
+        for f in features:
             b = f.get('bbox')
             if b:
                 xs.extend([b[0], b[2]])
@@ -430,9 +373,20 @@ class RoughlyLocatedFeatureCollection(FeatureCollection):
         
         return geojson.FeatureCollection(
             id=self.context.getId(),
-            features=list(self.features),
+            features=features,
             bbox=bbox
             )
+
+    def mapping(self):
+        return dict(self._data())
+
+    def value(self):
+        return geojson.dumps(self._data())
+
+    def __call__(self):
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', 'application/json')
+        return self.value()
 
 
 class PlaceContainerFeatureCollection(BrowserPage):
