@@ -3,7 +3,7 @@
 from math import sqrt
 import unittest
 
-from pleiades.json.browser import stick_interpolate
+from pleiades.json.browser import aggregate, stick_interpolate
 
 SQRT2 = sqrt(2.0)
 
@@ -68,8 +68,18 @@ class InterpolationTestCase(unittest.TestCase):
         self.assertPointAlmostEqual(r, (0.63245553203367588, 1.2649110640673518))
         self.assertPointAlmostEqual(s, (-0.63245553203367599, -1.264911064067352))
 
+class AggregationTestCase(unittest.TestCase):
+    def test_beyond_and_left_upper_right_corner(self):
+        result = aggregate(
+            (1.0, 2.0), 
+            "http://localhost/", 
+            (-1.0, -1.0, 1.0, 1.0), 
+            [dict(path="foo"), dict(path="bar")])
+        self.assertEqual(result['type'], "pleiades.stoa.org.BoxBoundedRoughFeature")
+
 def test_suite():
     loader = unittest.TestLoader()
     return unittest.TestSuite([
         loader.loadTestsFromTestCase(InterpolationTestCase),
+        loader.loadTestsFromTestCase(AggregationTestCase),
         ])
