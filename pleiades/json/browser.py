@@ -276,7 +276,7 @@ def aggregate(context_centroid, portal_url, geom_bbox, objects):
             ob.name, 
             ob.featureTypes, 
             ob.timePeriods, 
-            ob.altLocation or ""))
+            ob.altLocation or "") for ob in objects)
     props['description'] = "<div><ul>" + description + "</ul></div>"
 
     # Compute the "sticks"
@@ -324,20 +324,14 @@ class RoughlyLocatedFeatureCollection(JsonBase):
         log.debug("Criteria: %s", self.criteria(g))
         geoms = {}
         objects = {}
-        for brain in catalog(**self.criteria(g)):
+        brains = catalog(**self.criteria(g))
+        for brain in brains:
             if brain.getId == self.context.getId():
                 # skip self
                 continue
             item = PleiadesBrainPlacemark(brain, self.request) 
-            #dict(
-            #    id=brain.getId,
-            #    path=brain.getPath(),
-            #    title=brain.Title,
-            #    description=brain.Description,
-            #    link="http://pleiades.stoa.org/places/" + brain.getId)
             geo = brain.zgeo_geometry
             if geo and geo.has_key('type') and geo.has_key('coordinates'):
-                # key = (geo['type'], geo['coordinates'])
                 key = repr(geo)
                 if not key in geoms:
                     geoms[key] = geo
@@ -346,11 +340,11 @@ class RoughlyLocatedFeatureCollection(JsonBase):
                 else:
                     objects[key] = [item]
         return list(
-            aggregate(
+            [aggregate(
                 (context_centroid.x, context_centroid.y),
                 portal_url,
                 asShape(geoms[key]).bounds, 
-                val) for key, val in objects.items()
+                val) for key, val in objects.items()]
                 )
                 #],
                 #key=W,
