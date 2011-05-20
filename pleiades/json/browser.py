@@ -345,14 +345,16 @@ class RoughlyLocatedFeatureCollection(JsonBase):
                     objects[key].append(item)
                 else:
                     objects[key] = [item]
-        return sorted(
-            [aggregate(
+        return list(
+            aggregate(
                 (context_centroid.x, context_centroid.y),
                 portal_url,
                 asShape(geoms[key]).bounds, 
-                val) for key, val in objects.items()],
-                key=W,
-                reverse=True)
+                val) for key, val in objects.items()
+                )
+                #],
+                #key=W,
+                #reverse=True)
 
     @memoize
     def _data(self):
