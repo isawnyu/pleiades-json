@@ -84,8 +84,10 @@ class W(object):
     def __init__(self, o):
         self.o = o
     def __lt__(self, other):
-        return asShape(self.o.geometry).within(asShape(other.o.geometry))
-
+        try:
+            return asShape(self.o.geometry).within(asShape(other.o.geometry))
+        except ValueError:
+            return False
 
 class IJSON(Interface):
     def mapping():
