@@ -12,6 +12,7 @@ from zope.publisher.browser import BrowserPage, BrowserView
 from ZTUtils import make_query
 
 from pleiades.capgrids import Grid
+from pleiades.contentratings.basic import rating
 from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
@@ -140,30 +141,47 @@ class FeatureCollection(JsonBase):
         sm = bool(self.request.form.get('sm', 0))
         xs = []
         ys = []
-        x = list(self.context.getLocations())
+        x = sorted(self.context.getLocations(), key=rating, reverse=True)
+        location_ratings = sorted(
+            (rating(o) for o in self.context.getLocations()), reverse=True)
+
         if len(x) > 0:
             features = [wrap(ob, sm) for ob in x]
         else:
             features = [wrap(ob, sm) for ob in self.context.getFeatures()] \
-                     + [wrap(ob, sm) for ob in self.context.getParts()] 
-        # get place bounds
-        for f in features:
+                     + [wrap(ob, sm) for ob in self.context.getParts()]
+
+        # get place bounds and representative point
+        repr_point = None
+        for f, r in zip(features, location_ratings):
             if f.geometry and hasattr(f.geometry, '__geo_interface__'):
                 shape = asShape(f.geometry)
                 b = shape.bounds
                 xs.extend([b[0], b[2]])
                 ys.extend([b[1], b[3]])
-        
+                if repr_point is None and r > 0.0:
+                    repr_point = shape.centroid
         if len(xs) * len(ys) > 0:
             bbox = [min(xs), min(ys), max(xs), max(ys)]
         else:
             bbox = None
         
+        if repr_point:
+            reprPoint = (repr_point.x, repr_point.y)
+        else:
+            reprPoint = None
+
+        # Names
+        objs = sorted(self.context.getNames(), key=rating, reverse=True)
+        names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
+
         return geojson.FeatureCollection(
             id=self.context.getId(),
             title=self.context.Title(),
             description=self.context.Description(),
             features=sorted(features, key=W, reverse=True),
+            names=[unicode(n, "utf-8") for n in names],
+            reprPoint=reprPoint,
             bbox=bbox
             )
 
