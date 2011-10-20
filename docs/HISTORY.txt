@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8.2 (2011-10-19)
+------------------
+- Add title and description to feature collections.
+
 0.1
 ----------------
 
