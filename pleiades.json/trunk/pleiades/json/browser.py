@@ -161,6 +161,8 @@ class FeatureCollection(JsonBase):
         
         return geojson.FeatureCollection(
             id=self.context.getId(),
+            title=self.context.Title(),
+            description=self.context.Description(),
             features=sorted(features, key=W, reverse=True),
             bbox=bbox
             )
