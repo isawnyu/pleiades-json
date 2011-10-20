@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8.3 (2011-10-20)
+------------------
+- Add place names and sort by rating.
+
 0.8.2 (2011-10-19)
 ------------------
 - Add title and description to feature collections.
