@@ -6,6 +6,10 @@ import geojson
 from pyproj import Proj
 from shapely.geometry import asShape, LineString, Point
 
+from Acquisition import aq_inner
+from DateTime import DateTime
+from plone.app.layout.viewlets.content import ContentHistoryViewlet
+from plone.memoize.instance import memoize
 from Products.CMFCore.utils import getToolByName
 from zope.interface import implements, Interface, Attribute
 from zope.publisher.browser import BrowserPage, BrowserView
@@ -16,7 +20,6 @@ from pleiades.contentratings.basic import rating
 from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
-from plone.memoize.instance import memoize
 from zgeo.geographer.interfaces import IGeoreferenced
 
 log = logging.getLogger("pleiades.json")
@@ -175,11 +178,35 @@ class FeatureCollection(JsonBase):
         objs = sorted(self.context.getNames(), key=rating, reverse=True)
         names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
 
+        # Modification time and and actor
+        # history = ContentHistoryViewlet(self.context, self.request, self, None)
+        try:
+            context = aq_inner(self.context)
+            rt = getToolByName(context, "portal_repository")
+            records = []
+            history = rt.getHistoryMetadata(context)
+            metadata = history.retrieve(0)['metadata']['sys_metadata']
+            records.append((metadata['timestamp'], metadata))
+            for ob in context.listFolderContents():
+                history = rt.getHistoryMetadata(ob)
+                metadata = history.retrieve(0)['metadata']['sys_metadata']
+                records.append((metadata['timestamp'], metadata))
+            records = sorted(records, reverse=True)
+            modified = DateTime(records[0][0]).HTML4()
+            actor = records[0][1]['principal']
+        except:
+            log.error(
+                "Failed to find last change metadata for %s", repr(self.context))
+            modified = None
+            actor = None
+
         return geojson.FeatureCollection(
             id=self.context.getId(),
             title=self.context.Title(),
             description=self.context.Description(),
             features=sorted(features, key=W, reverse=True),
+            modified=modified,
+            author=actor,
             names=[unicode(n, "utf-8") for n in names],
             reprPoint=reprPoint,
             bbox=bbox
