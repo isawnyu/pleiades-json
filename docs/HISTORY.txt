@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.8.4 (2011-10-28)
+------------------
+- Add modified timestamp and actor to Place JSON, taken from the most recent
+  change to the container or children.
+
 0.8.3 (2011-10-20)
 ------------------
 - Add place names and sort by rating.
