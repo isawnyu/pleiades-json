@@ -185,12 +185,12 @@ class FeatureCollection(JsonBase):
             records = []
             history = rt.getHistoryMetadata(context)
             if history:
-                metadata = history.retrieve(0)['metadata']['sys_metadata']
+                metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
             for ob in context.listFolderContents():
                 history = rt.getHistoryMetadata(ob)
                 if not history: continue
-                metadata = history.retrieve(0)['metadata']['sys_metadata']
+                metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
             records = sorted(records, reverse=True)
             modified = DateTime(records[0][0]).HTML4()
