@@ -179,16 +179,17 @@ class FeatureCollection(JsonBase):
         names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
 
         # Modification time and and actor
-        # history = ContentHistoryViewlet(self.context, self.request, self, None)
         try:
             context = aq_inner(self.context)
             rt = getToolByName(context, "portal_repository")
             records = []
             history = rt.getHistoryMetadata(context)
-            metadata = history.retrieve(0)['metadata']['sys_metadata']
-            records.append((metadata['timestamp'], metadata))
+            if history:
+                metadata = history.retrieve(0)['metadata']['sys_metadata']
+                records.append((metadata['timestamp'], metadata))
             for ob in context.listFolderContents():
                 history = rt.getHistoryMetadata(ob)
+                if not history: continue
                 metadata = history.retrieve(0)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
             records = sorted(records, reverse=True)
