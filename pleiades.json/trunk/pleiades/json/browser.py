@@ -178,7 +178,7 @@ class FeatureCollection(JsonBase):
         objs = sorted(self.context.getNames(), key=rating, reverse=True)
         names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
 
-        # Modification time and and actor
+        # Modification time, actor, contributors
         try:
             context = aq_inner(self.context)
             rt = getToolByName(context, "portal_repository")
@@ -193,21 +193,28 @@ class FeatureCollection(JsonBase):
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
             records = sorted(records, reverse=True)
+            recent_changes = []
             modified = DateTime(records[0][0]).HTML4()
-            actor = records[0][1]['principal']
+            principal0 = records[0][1]['principal']
+            recent_changes.append(dict(modified=modified, principal=principal0))
+            for record in records[1:]:
+                principal = record[1]['principal']
+                if principal != principal0:
+                    modified = DateTime(record[0]).HTML4()
+                    recent_changes.append(
+                        dict(modified=modified, principal=principal))
+                    break
         except:
             log.error(
                 "Failed to find last change metadata for %s", repr(self.context))
-            modified = None
-            actor = None
+            recent_changes = None
 
         return geojson.FeatureCollection(
             id=self.context.getId(),
             title=self.context.Title(),
             description=self.context.Description(),
             features=sorted(features, key=W, reverse=True),
-            modified=modified,
-            author=actor,
+            recent_changes=recent_changes,
             names=[unicode(n, "utf-8") for n in names],
             reprPoint=reprPoint,
             bbox=bbox
