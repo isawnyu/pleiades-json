@@ -136,15 +136,33 @@ class Feature(JsonBase):
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.value()
 
+def filter(context, **kw):
+    for r in context.getFolderContents():
+        test = 1
+        for k, v in kw.items():
+            test *= (r[k] == v or v in r[k])
+            if not test:
+                break
+        if test:
+            yield r.getObject()
 
 class FeatureCollection(JsonBase):
 
     @memoize
-    def _data(self):
+    def _data(self, published_only=False):
+        if published_only:
+            contentFilter = {'review_state': 'published'}
+        else:
+            contentFilter = {}
         sm = bool(self.request.form.get('sm', 0))
         xs = []
         ys = []
-        x = sorted(self.context.getLocations(), key=rating, reverse=True)
+        x = sorted(
+            filter(
+                self.context,
+                **dict(
+                    [('portal_type', 'Location')] + contentFilter.items())),
+            key=rating, reverse=True)
         location_ratings = sorted(
             (rating(o) for o in self.context.getLocations()), reverse=True)
 
@@ -175,7 +193,12 @@ class FeatureCollection(JsonBase):
             reprPoint = None
 
         # Names
-        objs = sorted(self.context.getNames(), key=rating, reverse=True)
+        objs = sorted(
+            filter(
+                self.context,
+                **dict(
+                    [('portal_type', 'Name')] + contentFilter.items())),
+            key=rating, reverse=True)
         names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
 
         # Modification time, actor, contributors
@@ -187,7 +210,7 @@ class FeatureCollection(JsonBase):
             if history:
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
-            for ob in context.listFolderContents():
+            for ob in filter(self.context, **contentFilter):
                 history = rt.getHistoryMetadata(ob)
                 if not history: continue
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
@@ -223,13 +246,13 @@ class FeatureCollection(JsonBase):
     def mapping(self):
         return dict(self._data())
 
-    def value(self):
-        return geojson.dumps(self._data())
+    def value(self, **kw):
+        return geojson.dumps(self._data(**kw))
 
-    def __call__(self):
+    def __call__(self, **kw):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
-        return self.value()
+        return self.value(**kw)
 
 def sign(x):
     if x < 0:
