@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8.7 (2012-01-11)
+------------------
+- Fall back on first exterior ring coordinate when centroid of polygon is null.
+
 0.8.4 (2011-10-28)
 ------------------
 - Add modified timestamp and actor to Place JSON, taken from the most recent

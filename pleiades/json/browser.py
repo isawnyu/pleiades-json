@@ -4,7 +4,7 @@ from urllib import quote
 
 import geojson
 from pyproj import Proj
-from shapely.geometry import asShape, LineString, Point
+from shapely.geometry import asShape, LineString, Point, shape
 
 from Acquisition import aq_inner
 from DateTime import DateTime
@@ -144,7 +144,11 @@ def filter(context, **kw):
             if not test:
                 break
         if test:
-            yield r.getObject()
+            try:
+                yield r.getObject()
+            except:
+                import pdb; pdb.set_trace()
+                raise
 
 class FeatureCollection(JsonBase):
 
@@ -398,7 +402,10 @@ class RoughlyLocatedFeatureCollection(JsonBase):
         catalog = getToolByName(self.context, 'portal_catalog')
         try:
             g = IGeoreferenced(self.context)
-            context_centroid = asShape(g.geo).centroid
+            s = shape(g.geo)
+            context_centroid = s.centroid
+            if context_centroid.is_empty:
+                context_centroid = Point(*s.exterior.coords[0])
         except NotLocatedError:
             return []
         log.debug("Criteria: %s", self.criteria(g))
