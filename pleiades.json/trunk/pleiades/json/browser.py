@@ -258,6 +258,54 @@ class FeatureCollection(JsonBase):
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.value(**kw)
 
+
+class ConnectionsFeatureCollection(FeatureCollection):
+
+    @memoize
+    def _data(self, published_only=False):
+        wftool = getToolByName(self.context, 'portal_workflow')
+        sm = bool(self.request.form.get('sm', 0))
+        xs = []
+        ys = []
+        if published_only:
+            func = lambda f: wftool.getInfoFor(f, 'review_state') == 'published'
+        else:
+            func = lambda f: True
+        features = [
+            wrap(o, sm) for o in list(
+                self.context.getConnections() + self.context.getConnections_from())
+                if func(o) ]
+
+        # get place bounds and representative point
+        repr_point = None
+        for f, r in zip(features, [1.0]*len(features)):
+            if f.geometry and hasattr(f.geometry, '__geo_interface__'):
+                shape = asShape(f.geometry)
+                b = shape.bounds
+                xs.extend([b[0], b[2]])
+                ys.extend([b[1], b[3]])
+                if repr_point is None and r > 0.0:
+                    repr_point = shape.centroid
+        if len(xs) * len(ys) > 0:
+            bbox = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            bbox = None
+        
+        if repr_point:
+            reprPoint = (repr_point.x, repr_point.y)
+        else:
+            reprPoint = None
+
+        return geojson.FeatureCollection(
+            id=self.context.getId(),
+            title=self.context.Title(),
+            description=self.context.Description(),
+            features=sorted(features, key=W, reverse=True),
+            reprPoint=reprPoint,
+            bbox=bbox
+            )
+
+
 def sign(x):
     if x < 0:
         return -1.0

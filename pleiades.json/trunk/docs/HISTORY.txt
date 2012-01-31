@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.9 (2012-01-31)
+----------------
+- Add a view of connected places.
+
 0.8.7 (2012-01-11)
 ------------------
 - Fall back on first exterior ring coordinate when centroid of polygon is null.
