@@ -259,53 +259,6 @@ class FeatureCollection(JsonBase):
         return self.value(**kw)
 
 
-class ConnectionsFeatureCollection(FeatureCollection):
-
-    @memoize
-    def _data(self, published_only=False):
-        wftool = getToolByName(self.context, 'portal_workflow')
-        sm = bool(self.request.form.get('sm', 0))
-        xs = []
-        ys = []
-        if published_only:
-            func = lambda f: wftool.getInfoFor(f, 'review_state') == 'published'
-        else:
-            func = lambda f: True
-        features = [
-            wrap(o, sm) for o in list(
-                self.context.getConnections() + self.context.getConnections_from())
-                if func(o) ]
-
-        # get place bounds and representative point
-        repr_point = None
-        for f, r in zip(features, [1.0]*len(features)):
-            if f.geometry and hasattr(f.geometry, '__geo_interface__'):
-                shape = asShape(f.geometry)
-                b = shape.bounds
-                xs.extend([b[0], b[2]])
-                ys.extend([b[1], b[3]])
-                if repr_point is None and r > 0.0:
-                    repr_point = shape.centroid
-        if len(xs) * len(ys) > 0:
-            bbox = [min(xs), min(ys), max(xs), max(ys)]
-        else:
-            bbox = None
-        
-        if repr_point:
-            reprPoint = (repr_point.x, repr_point.y)
-        else:
-            reprPoint = None
-
-        return geojson.FeatureCollection(
-            id=self.context.getId(),
-            title=self.context.Title(),
-            description=self.context.Description(),
-            features=sorted(features, key=W, reverse=True),
-            reprPoint=reprPoint,
-            bbox=bbox
-            )
-
-
 def sign(x):
     if x < 0:
         return -1.0
@@ -518,6 +471,85 @@ class RoughlyLocatedFeatureCollection(JsonBase):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.value()
+
+
+class ConnectionsFeatureCollection(FeatureCollection):
+
+    @memoize
+    def _data(self, published_only=False):
+        context = self.context
+        catalog = getToolByName(self.context, 'portal_catalog')
+        wftool = getToolByName(self.context, 'portal_workflow')
+        portal_url = getToolByName(self.context, 'portal_url')()
+        sm = bool(self.request.form.get('sm', 0))
+        xs = []
+        ys = []
+        if published_only:
+            func = lambda f: wftool.getInfoFor(f, 'review_state') == 'published'
+        else:
+            func = lambda f: True
+        conxns = [o for o in list(
+                    context.getConnections() + context.getConnections_from())
+                    if func(o) ]
+        geoms = {}
+        objects = {}
+        features = []
+        for ob in conxns:
+            try:
+                f = wrap(ob, sm)
+                s = asShape(f.geometry)
+                b = s.bounds
+                xs.extend([b[0], b[2]])
+                ys.extend([b[1], b[3]])
+                gi = IGeoreferenced(ob)
+                if gi.precision == 'rough':
+                    brain = catalog(getId=ob.getId())[0]
+                    item = PleiadesBrainPlacemark(brain, self.request) 
+                    geo = gi.__geo_interface__['geometry']
+                    key = repr(geo)
+                    if not key in geoms:
+                        geoms[key] = geo
+                    if key in objects:
+                        objects[key].append(item)
+                    else:
+                        objects[key] = [item]
+                else:
+                    features.append(f)
+            except (NotLocatedError, ValueError):
+                log.error("Failed to located %s", ob)
+        
+        if len(xs) * len(ys) > 0:
+            bbox = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            bbox = None
+
+        try:
+            g = IGeoreferenced(self.context)
+            s = shape(g.geo)
+            context_centroid = s.centroid
+            if context_centroid.is_empty:
+                context_centroid = Point(*s.exterior.coords[0])
+        except NotLocatedError:
+            if bbox is not None:
+                context_centroid = Point(
+                    (bbox[0]+bbox[2])/2.0, (bbox[1]+bbox[3])/2.0)
+            else:
+                return []
+
+        rough_features = [
+            aggregate(
+                (context_centroid.x, context_centroid.y),
+                portal_url,
+                asShape(geoms[key]).bounds, 
+                val) for key, val in objects.items()]
+
+        return geojson.FeatureCollection(
+            id=self.context.getId(),
+            title=self.context.Title(),
+            description=self.context.Description(),
+            features=rough_features + sorted(features, key=W, reverse=True),
+            bbox=bbox
+            )
 
 
 class PlaceContainerFeatureCollection(BrowserPage):
