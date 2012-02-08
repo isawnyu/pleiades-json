@@ -1,31 +1,46 @@
 Test serialization of Place to JSON
 ===================================
-    
-    >>> from Products.PloneTestCase.setup import portal_owner, default_password
+
+  >>> import simplejson
+  >>> from Products.PloneTestCase.setup import portal_owner, default_password
 
 A place without component features should be represented as a feature
     
-    >>> r = http(r"""
-    ... GET /plone/places/2/@@json HTTP/1.1
-    ... Authorization: Basic %s:%s
-    ... """ % (portal_owner, default_password), handle_errors=False)
-    >>> r.getStatus()
-    200
-    >>> r.getHeader('Content-Type')
-    'application/json'
-    >>> print r.getBody()
-    {"features": [{"geometry": {"type": "Point", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/2/position", "description": "", "title": "Point 1"}, "id": "position"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "2"}
+  >>> r = http(r"""
+  ... GET /plone/places/2/@@json HTTP/1.1
+  ... Authorization: Basic %s:%s
+  ... """ % (portal_owner, default_password), handle_errors=False)
+  >>> r.getStatus()
+  200
+  >>> r.getHeader('Content-Type')
+  'application/json'
+  >>> data = simplejson.loads(r.getBody())
+  >>> len(data['features'])
+  1
+  >>> data['features'][0]['geometry']['coordinates']
+  [-86.480833333333294, 34.769722222222001]
+  >>> data['bbox']
+  [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001]
+  
+  {"features": [{"geometry": {"type": "Point", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/2/position", "description": "", "title": "Point 1"}, "id": "position"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "2"}
 
 A place with only a BAtlas citation
     
-    >>> r = http(r"""
-    ... GET /plone/places/3/@@json HTTP/1.1
-    ... Authorization: Basic %s:%s
-    ... """ % (portal_owner, default_password), handle_errors=False)
-    >>> r.getStatus()
-    200
-    >>> r.getHeader('Content-Type')
-    'application/json'
-    >>> print r.getBody()
-    {"features": [{"geometry": {"type": "Polygon", "relation": "relates", "bbox": [12.0, 32.0, 13.0, 33.0], "coordinates": [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/3/undetermined", "description": "", "title": "Undetermined location"}, "id": "undetermined"}], "type": "FeatureCollection", "bbox": [12.0, 32.0, 13.0, 33.0], "id": "3"}
-    
+  >>> r = http(r"""
+  ... GET /plone/places/3/@@json HTTP/1.1
+  ... Authorization: Basic %s:%s
+  ... """ % (portal_owner, default_password), handle_errors=False)
+  >>> r.getStatus()
+  200
+  >>> r.getHeader('Content-Type')
+  'application/json'
+  >>> data = simplejson.loads(r.getBody())
+  >>> len(data['features'])
+  1
+  >>> data['features'][0]['geometry']['relation']
+  'relates'
+  >>> data['features'][0]['geometry']['coordinates']
+  [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]
+  >>> data['connectsWith']
+  ['2']
+

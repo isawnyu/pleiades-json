@@ -48,7 +48,8 @@ ptc.setupPloneSite(
     'Products.ATBackRef',
     'PleiadesEntity',
     'pleiades.workspace',
-    'zgeo.plone.geographer', 
+    'zgeo.plone.geographer',
+    'pleiades.contentratings'
     ])
 
 class PleiadesJSONTestCase(ptc.PloneTestCase):
@@ -74,4 +75,5 @@ class PleiadesJSONFunctionalTestCase(ContentFunctionalTestCase):
         pid = self.places.invokeFactory('Place', '3', title='Ninoe',)
         p = self.places[pid]
         lid = p.invokeFactory('Location', 'undetermined', title='Undetermined location', geometry=None, location='http://atlantides.org/capgrids/35/E2')
+        p.addReference(self.places['2'], "connectsWith")
     

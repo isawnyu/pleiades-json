@@ -236,6 +236,9 @@ class FeatureCollection(JsonBase):
                 "Failed to find last change metadata for %s", repr(self.context))
             recent_changes = None
 
+        # connections
+        connections = [o.getId() for o in self.context.getRefs("connectsWith") + self.context.getBRefs("connectsWith")]
+
         return geojson.FeatureCollection(
             id=self.context.getId(),
             title=self.context.Title(),
@@ -244,7 +247,8 @@ class FeatureCollection(JsonBase):
             recent_changes=recent_changes,
             names=[unicode(n, "utf-8") for n in names],
             reprPoint=reprPoint,
-            bbox=bbox
+            bbox=bbox,
+            connectsWith=connections
             )
 
     def mapping(self):
