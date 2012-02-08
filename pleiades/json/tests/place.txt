@@ -21,8 +21,8 @@ A place without component features should be represented as a feature
   [-86.480833333333294, 34.769722222222001]
   >>> data['bbox']
   [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001]
-  
-  {"features": [{"geometry": {"type": "Point", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "coordinates": [-86.480833333333294, 34.769722222222001]}, "type": "Feature", "properties": {"link": "http://localhost/plone/places/2/position", "description": "", "title": "Point 1"}, "id": "position"}], "type": "FeatureCollection", "bbox": [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001], "id": "2"}
+  >>> data['reprPoint']
+  [-86.480833333333294, 34.769722222222001]
 
 A place with only a BAtlas citation
     

@@ -176,16 +176,17 @@ class FeatureCollection(JsonBase):
             features = [wrap(ob, sm) for ob in self.context.getFeatures()] \
                      + [wrap(ob, sm) for ob in self.context.getParts()]
 
-        # get place bounds and representative point
+        # Get place bounds and representative point, which is the centroid
+        # of the highest rated location.
         repr_point = None
-        for f, r in zip(features, location_ratings):
+        for r, f in sorted(zip(location_ratings, features)):
             if f.geometry and hasattr(f.geometry, '__geo_interface__'):
-                shape = asShape(f.geometry)
-                b = shape.bounds
+                s = shape(f.geometry)
+                b = s.bounds
                 xs.extend([b[0], b[2]])
                 ys.extend([b[1], b[3]])
-                if repr_point is None and r > 0.0:
-                    repr_point = shape.centroid
+                if repr_point is None:
+                    repr_point = s.centroid
         if len(xs) * len(ys) > 0:
             bbox = [min(xs), min(ys), max(xs), max(ys)]
         else:
