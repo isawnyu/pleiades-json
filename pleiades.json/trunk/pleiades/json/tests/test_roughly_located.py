@@ -70,11 +70,22 @@ class InterpolationTestCase(unittest.TestCase):
 
 class AggregationTestCase(unittest.TestCase):
     def test_beyond_and_left_upper_right_corner(self):
+        class MockContext(object):
+            def getPath(self):
+                return "foo"
+        class MockBrainWrapper(object):
+            alternate_link = "http://example.com"
+            featureTypes = ["unknown"]
+            timePeriods = ["roman"]
+            altLocation = "somewhere"
+            def __init__(self, name):
+                self.context = MockContext()
+                self.name = name
         result = aggregate(
             (1.0, 2.0), 
             "http://localhost/", 
             (-1.0, -1.0, 1.0, 1.0), 
-            [dict(path="foo"), dict(path="bar")])
+            [MockBrainWrapper("1"), MockBrainWrapper("2")])
         self.assertEqual(result['type'], "pleiades.stoa.org.BoxBoundedRoughFeature")
 
 def test_suite():
