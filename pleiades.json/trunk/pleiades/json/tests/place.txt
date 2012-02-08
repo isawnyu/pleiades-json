@@ -41,6 +41,8 @@ A place with only a BAtlas citation
   'relates'
   >>> data['features'][0]['geometry']['coordinates']
   [[[12.0, 32.0], [12.0, 33.0], [13.0, 33.0], [13.0, 32.0], [12.0, 32.0]]]
+  >>> data['reprPoint']
+  [12.5, 32.5]
   >>> data['connectsWith']
   ['2']
 
