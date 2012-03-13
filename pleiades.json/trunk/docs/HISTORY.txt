@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.12 (2012-03-13)
+-----------------
+- Add CORS Access-Control-Allow-Origin: * header.
+
 0.11 (2012-02-08)
 -----------------
 - Add connected places to JSON under "connectsWith".
