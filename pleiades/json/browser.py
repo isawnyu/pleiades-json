@@ -261,6 +261,8 @@ class FeatureCollection(JsonBase):
     def __call__(self, **kw):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
+        self.request.response.setHeader(
+            'Access-Control-Allow-Origin', '*')
         return self.value(**kw)
 
 
