@@ -20,11 +20,54 @@ from pleiades.contentratings.basic import rating
 from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
+from Products.PleiadesEntity.time import periodRanges, TimePeriodCmp, to_ad
 from zgeo.geographer.interfaces import IGeoreferenced
 
 log = logging.getLogger("pleiades.json")
 
 TGOOGLE = Transform(PROJ_900913)
+
+class SnippetWrapper(object):
+    
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def featureTypes(self):
+        return ", ".join(x.capitalize() for x in (
+            self.context.getFeatureType() or ["unknown"]))
+
+    @property
+    def snippet(self):
+        sdata = [self.featureTypes]
+        timespan = self.timeSpanAD
+        if timespan:
+            sdata += ["%(start)s - %(end)s" % timespan]
+        return "; ".join(sdata)
+
+    @property
+    def author(self):
+        return {'name': self.context.Creator(), 'uri': self.alternate_link}
+
+    @property
+    def timeSpan(self):
+        try:
+            trange = self.context.temporalRange()
+            if trange:
+                return {'start': int(trange[0]), 'end': int(trange[1])}
+            else:
+                return None
+        except AttributeError:
+            return None
+
+    @property
+    def timeSpanAD(self):
+        span = self.timeSpan
+        if span:
+            return dict([(k, to_ad(v)) for k, v in span.items()])
+        else:
+            return None
+
 
 def wrap(ob, project_sm=False):
     try:
@@ -40,8 +83,9 @@ def wrap(ob, project_sm=False):
     return geojson.Feature(
                     id=ob.getId(),
                     properties=dict(
-                        title=ob.title,
-                        description=ob.description,
+                        title=ob.Title(),
+                        snippet=SnippetWrapper(ob).snippet,
+                        description=ob.Description(),
                         link=ob.absolute_url()
                         ),
                     geometry=geometry
@@ -135,6 +179,7 @@ class Feature(JsonBase):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return self.value()
+
 
 def filter(context, **kw):
     for r in context.getFolderContents():
@@ -238,7 +283,8 @@ class FeatureCollection(JsonBase):
             recent_changes = None
 
         # connections
-        connections = [o.getId() for o in self.context.getRefs("connectsWith") + self.context.getBRefs("connectsWith")]
+        connections = [o.getId() for o in self.context.getRefs(
+            "connectsWith") + self.context.getBRefs("connectsWith")]
 
         return geojson.FeatureCollection(
             id=self.context.getId(),
@@ -363,11 +409,10 @@ def aggregate(context_centroid, portal_url, geom_bbox, objects):
         link="%s/search?%s" % (portal_url, make_query(query)))
     
     description = "".join(
-        "<li><a href=\"%s\">%s</a> (<em>%s; %s</em>): %s</li>" % (
+        "<li><a href=\"%s\">%s</a> (<em>%s</em>): %s</li>" % (
             ob.alternate_link, 
             ob.name, 
-            ob.featureTypes, 
-            ob.timePeriods, 
+            ob.snippet, 
             ob.altLocation or "") for ob in objects)
     props['description'] = "<div><ul>" + description + "</ul></div>"
 
