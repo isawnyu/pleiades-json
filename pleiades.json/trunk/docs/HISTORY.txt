@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.13 (2012-04-26)
+-----------------
+- Add feature type and time span snippets.
+
 0.12 (2012-03-13)
 -----------------
 - Add CORS Access-Control-Allow-Origin: * header.
