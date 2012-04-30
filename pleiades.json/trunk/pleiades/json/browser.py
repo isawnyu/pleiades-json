@@ -137,6 +137,19 @@ class W(object):
         except ValueError:
             return False
 
+
+class L(object):
+    # Spatial length wrapper for use as a sorting key
+    def __init__(self, o):
+        self.k, v = o
+    def __lt__(self, other):
+        try:
+            return asShape(
+                eval(self.k)).length < asShape(eval(other.k)).length
+        except ValueError:
+            return False
+
+
 class IJSON(Interface):
     def mapping():
         """As dict"""
@@ -472,6 +485,7 @@ class RoughlyLocatedFeatureCollection(JsonBase):
             item = PleiadesBrainPlacemark(brain, self.request) 
             geo = brain.zgeo_geometry
             if geo and geo.has_key('type') and geo.has_key('coordinates'):
+                
                 key = repr(geo)
                 if not key in geoms:
                     geoms[key] = geo
@@ -484,11 +498,9 @@ class RoughlyLocatedFeatureCollection(JsonBase):
                 (context_centroid.x, context_centroid.y),
                 portal_url,
                 asShape(geoms[key]).bounds, 
-                val) for key, val in objects.items()]
+                val) for key, val in sorted(
+                    objects.items(), key=L, reverse=True)]
                 )
-                #],
-                #key=W,
-                #reverse=True)
 
     @memoize
     def _data(self):

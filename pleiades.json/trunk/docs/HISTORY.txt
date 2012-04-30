@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.13.1 (2012-04-30)
+-------------------
+- Sort feature aggregates by length.
+
 0.13 (2012-04-26)
 -----------------
 - Add feature type and time span snippets.
