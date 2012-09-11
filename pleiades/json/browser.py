@@ -205,7 +205,6 @@ def filter(context, **kw):
             try:
                 yield r.getObject()
             except:
-                import pdb; pdb.set_trace()
                 raise
 
 class FeatureCollection(JsonBase):
@@ -664,4 +663,46 @@ class PlaceContainerFeatureCollection(BrowserPage):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(c)
+
+
+class SearchBatchFeatureCollection(FeatureCollection):
+
+    @memoize
+    def _data(self, brains=None):
+        features = []
+        xs = []
+        ys = []
+        for brain in brains:
+            geo = brain.zgeo_geometry
+            if geo and geo.has_key('type') and geo.has_key('coordinates'):
+                mark = PleiadesBrainPlacemark(brain, self.request)
+                features.append(
+                    geojson.Feature(
+                        id=brain.getId,
+                        properties=dict(
+                            title=brain.Title,
+                            snippet=mark.snippet,
+                            description=brain.Description,
+                            link=brain.getPath(),
+                        ),
+                    geometry=geo) )
+                s = asShape(geo)
+                b = s.bounds
+                xs.extend([b[0], b[2]])
+                ys.extend([b[1], b[3]])
+        if len(xs) * len(ys) > 0:
+            bbox = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            bbox = None
+
+        return geojson.FeatureCollection(
+            id='search',
+            title="Search Results",
+            description="Geolocated objects in a batch of search results",
+            features=sorted(features, key=W, reverse=True),
+            bbox=bbox
+            )
+
+    def data_uri(self, **kw):
+        return "data:application/json," + quote(self.value(**kw))
 

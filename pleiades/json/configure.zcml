@@ -36,6 +36,14 @@
     />
 
   <browser:view
+    for="*"
+    name="search-json"
+    class=".browser.SearchBatchFeatureCollection"
+    permission="zope2.View"
+    allowed_interface=".browser.IJSON"
+    />
+
+  <browser:view
     for="Products.PleiadesEntity.content.interfaces.ILocation"
     name="json"
     class=".browser.Feature"
