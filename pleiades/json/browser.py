@@ -4,7 +4,7 @@ from urllib import quote
 
 import geojson
 from pyproj import Proj
-from shapely.geometry import asShape, LineString, Point, shape
+from shapely.geometry import asShape, LineString, mapping, Point, shape
 
 from Acquisition import aq_inner
 from DateTime import DateTime
@@ -676,6 +676,7 @@ class SearchBatchFeatureCollection(FeatureCollection):
             geo = brain.zgeo_geometry
             if geo and geo.has_key('type') and geo.has_key('coordinates'):
                 mark = PleiadesBrainPlacemark(brain, self.request)
+                s = asShape(geo)
                 features.append(
                     geojson.Feature(
                         id=brain.getId,
@@ -683,10 +684,9 @@ class SearchBatchFeatureCollection(FeatureCollection):
                             title=brain.Title,
                             snippet=mark.snippet,
                             description=brain.Description,
-                            link=brain.getPath(),
+                            link=brain.getURL(),
                         ),
-                    geometry=geo) )
-                s = asShape(geo)
+                    geometry=mapping(s.representative_point())) )
                 b = s.bounds
                 xs.extend([b[0], b[2]])
                 ys.extend([b[1], b[3]])
