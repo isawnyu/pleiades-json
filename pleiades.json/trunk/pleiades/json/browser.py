@@ -18,6 +18,7 @@ from ZTUtils import make_query
 from pleiades.capgrids import Grid
 from pleiades.contentratings.basic import rating
 from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
+from pleiades.geographer.geo import extent, representative_point
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
 from Products.PleiadesEntity.time import periodRanges, TimePeriodCmp, to_ad
@@ -71,22 +72,24 @@ class SnippetWrapper(object):
 
 def wrap(ob, project_sm=False):
     try:
-        gi = IGeoreferenced(ob).__geo_interface__
-        g = gi.get('geometry', gi)
+        ex = extent(ob)
+        precision = ex['precision']
+        geometry = ex['extent']
         if project_sm:
+            g = geometry.get('geometry', geometry)
             geo = TGOOGLE(g)
-        else:
-            geo = g
-        geometry = geojson.GeoJSON.to_instance(geo)
-    except (TypeError, ValueError, NotLocatedError):
+            geometry = geojson.GeoJSON.to_instance(geo)
+    except (KeyError, TypeError, ValueError, NotLocatedError):
         geometry = None
+        precision = None
     return geojson.Feature(
                     id=ob.getId(),
                     properties=dict(
                         title=ob.Title(),
                         snippet=SnippetWrapper(ob).snippet,
                         description=ob.Description(),
-                        link=ob.absolute_url()
+                        link=ob.absolute_url(),
+                        location_precision=precision,
                         ),
                     geometry=geometry
                     )
@@ -194,7 +197,7 @@ class Feature(JsonBase):
         return self.value()
 
 
-def filter(context, **kw):
+def getContents(context, **kw):
     for r in context.getFolderContents():
         test = 1
         for k, v in kw.items():
@@ -219,13 +222,11 @@ class FeatureCollection(JsonBase):
         xs = []
         ys = []
         x = sorted(
-            filter(
+            getContents(
                 self.context,
                 **dict(
                     [('portal_type', 'Location')] + contentFilter.items())),
             key=rating, reverse=True)
-        location_ratings = sorted(
-            (rating(o) for o in self.context.getLocations()), reverse=True)
 
         if len(x) > 0:
             features = [wrap(ob, sm) for ob in x]
@@ -233,30 +234,19 @@ class FeatureCollection(JsonBase):
             features = [wrap(ob, sm) for ob in self.context.getFeatures()] \
                      + [wrap(ob, sm) for ob in self.context.getParts()]
 
-        # Get place bounds and representative point, which is the centroid
-        # of the highest rated location.
-        repr_point = None
-        for r, f in sorted(zip(location_ratings, features)):
-            if f.geometry and hasattr(f.geometry, '__geo_interface__'):
-                s = shape(f.geometry)
-                b = s.bounds
-                xs.extend([b[0], b[2]])
-                ys.extend([b[1], b[3]])
-                if repr_point is None:
-                    repr_point = s.centroid
-        if len(xs) * len(ys) > 0:
-            bbox = [min(xs), min(ys), max(xs), max(ys)]
-        else:
+        try:
+            ex = extent(self.context)
+            bbox = shape(ex['extent']).bounds
+            precision = ex['precision']
+            reprPoint = representative_point(self.context)['coords']
+        except:
+            precision = "unlocated"
             bbox = None
-        
-        if repr_point:
-            reprPoint = (repr_point.x, repr_point.y)
-        else:
             reprPoint = None
 
         # Names
         objs = sorted(
-            filter(
+            getContents(
                 self.context,
                 **dict(
                     [('portal_type', 'Name')] + contentFilter.items())),
@@ -272,7 +262,7 @@ class FeatureCollection(JsonBase):
             if history:
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
-            for ob in filter(self.context, **contentFilter):
+            for ob in getContents(self.context, **contentFilter):
                 history = rt.getHistoryMetadata(ob)
                 if not history: continue
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
@@ -673,23 +663,26 @@ class SearchBatchFeatureCollection(FeatureCollection):
         xs = []
         ys = []
         for brain in brains:
-            geo = brain.zgeo_geometry
-            if geo and geo.has_key('type') and geo.has_key('coordinates'):
-                mark = PleiadesBrainPlacemark(brain, self.request)
-                s = asShape(geo)
-                features.append(
-                    geojson.Feature(
-                        id=brain.getId,
-                        properties=dict(
-                            title=brain.Title,
-                            snippet=mark.snippet,
-                            description=brain.Description,
-                            link=brain.getURL(),
-                        ),
-                    geometry=mapping(s.representative_point())) )
-                b = s.bounds
-                xs.extend([b[0], b[2]])
-                ys.extend([b[1], b[3]])
+            bbox = brain.bbox
+            if not bbox:
+                continue
+            extent = brain.zgeo_geometry or mapping(box(*bbox))
+            reprPt = brain.reprPt and brain.reprPt[0] or shape(extent).centroid
+            precision = brain.reprPt and brain.reprPt[1] or "unlocated"
+            mark = PleiadesBrainPlacemark(brain, self.request)
+            features.append(
+                geojson.Feature(
+                    id=brain.getId,
+                    properties=dict(
+                        title=brain.Title,
+                        snippet=mark.snippet,
+                        description=brain.Description,
+                        link=brain.getURL(),
+                        location_precision=precision,
+                    ),
+                    geometry={'type': 'Point', 'coordinates': reprPt} ))
+            xs.extend([bbox[0], bbox[2]])
+            ys.extend([bbox[1], bbox[3]])
         if len(xs) * len(ys) > 0:
             bbox = [min(xs), min(ys), max(xs), max(ys)]
         else:

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.15 (2012-11-05)
+-----------------
+- Use the new extent and representative point methods of pleiades.geographer.
+
 0.14 (2012-09-10)
 -----------------
 - Introducing a JSON view of geolocated search results.

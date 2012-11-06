@@ -12,7 +12,7 @@ ztc.installProduct('ATVocabularyManager')
 ztc.installProduct('Products.CompoundField')
 ztc.installProduct('Products.ATBackRef')
 ztc.installProduct('PleiadesEntity')
-ztc.installProduct('zgeo.plone.geographer')
+
 
 @onsetup
 def setup_pleiades_json():
@@ -33,7 +33,10 @@ def setup_pleiades_json():
     # should be available. This can't happen until after we have loaded
     # the ZCML.
 
-    ztc.installPackage('pleiades.workspace')
+#    ztc.installPackage('pleiades.workspace')
+    ztc.installPackage('pleiades.geographer')
+    ztc.installPackage('pleiades.iterate')
+    ztc.installPackage('plone.app.iterate')
     ztc.installPackage('pleiades.json')
     
 # The order here is important: We first call the (deferred) function which
@@ -47,8 +50,9 @@ ptc.setupPloneSite(
     'Products.CompoundField',
     'Products.ATBackRef',
     'PleiadesEntity',
-    'pleiades.workspace',
-    'zgeo.plone.geographer',
+#    'pleiades.workspace',
+    'plone.app.iterate',
+    'pleiades.geographer',
     'pleiades.contentratings'
     ])
 

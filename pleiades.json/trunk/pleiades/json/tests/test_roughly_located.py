@@ -78,6 +78,7 @@ class AggregationTestCase(unittest.TestCase):
             featureTypes = ["unknown"]
             timePeriods = ["roman"]
             altLocation = "somewhere"
+            snippet = "Somewhere"
             def __init__(self, name):
                 self.context = MockContext()
                 self.name = name
