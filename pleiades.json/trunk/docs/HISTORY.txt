@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.15.1 (2012-11-07)
+-------------------
+- Don't expect a catalog record to contain bbox metadata, fall back to
+  bounds of the extent (zgeo_geometry).
+
 0.15 (2012-11-05)
 -----------------
 - Use the new extent and representative point methods of pleiades.geographer.
