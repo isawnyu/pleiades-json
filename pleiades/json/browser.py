@@ -662,14 +662,19 @@ class SearchBatchFeatureCollection(FeatureCollection):
         features = []
         xs = []
         ys = []
+
         for brain in brains:
+            extent = brain.zgeo_geometry
             bbox = brain.bbox
-            if not bbox:
+            if not (extent or bbox):
                 continue
-            extent = brain.zgeo_geometry or mapping(box(*bbox))
-            reprPt = brain.reprPt and brain.reprPt[0] or shape(extent).centroid
+            bbox = bbox or shape(extent).bounds
+            extent = extent or mapping(box(*bbox))
+            reprPt = brain.reprPt and brain.reprPt[0] or list(
+                shape(extent).centroid.coords)[0]
             precision = brain.reprPt and brain.reprPt[1] or "unlocated"
             mark = PleiadesBrainPlacemark(brain, self.request)
+            
             features.append(
                 geojson.Feature(
                     id=brain.getId,
