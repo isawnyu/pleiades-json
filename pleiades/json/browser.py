@@ -664,17 +664,24 @@ class SearchBatchFeatureCollection(FeatureCollection):
         ys = []
 
         for brain in brains:
-            extent = brain.zgeo_geometry
-            bbox = brain.bbox
-            if not (extent or bbox):
-                continue
-            bbox = bbox or shape(extent).bounds
-            extent = extent or mapping(box(*bbox))
-            reprPt = brain.reprPt and brain.reprPt[0] or list(
-                shape(extent).centroid.coords)[0]
-            precision = brain.reprPt and brain.reprPt[1] or "unlocated"
-            mark = PleiadesBrainPlacemark(brain, self.request)
             
+            try:
+                extent = brain.zgeo_geometry
+                bbox = brain.bbox
+                if not (extent or bbox):
+                    continue
+                bbox = bbox or shape(extent).bounds
+                extent = extent or mapping(box(*bbox))
+                reprPt = brain.reprPt and brain.reprPt[0] or list(
+                    shape(extent).centroid.coords)[0]
+                precision = brain.reprPt and brain.reprPt[1] or "unlocated"
+                mark = PleiadesBrainPlacemark(brain, self.request)
+            except Exception, e:
+                log.exception(
+                    "Search marking failure for %s: %s",
+                    brain.getPath(), str(e) )
+                continue
+
             features.append(
                 geojson.Feature(
                     id=brain.getId,
