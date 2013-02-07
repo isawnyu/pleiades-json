@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.15.1 (2012-11-07)
+0.15.1 (2013-02-07)
 -------------------
 - Don't expect a catalog record to contain bbox metadata, fall back to
   bounds of the extent (zgeo_geometry).
+- Expect some attempts to mark search results to fail and log these.
 
 0.15 (2012-11-05)
 -----------------
