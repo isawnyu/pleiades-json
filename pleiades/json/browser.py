@@ -461,7 +461,7 @@ class RoughlyLocatedFeatureCollection(JsonBase):
             context_centroid = s.centroid
             if context_centroid.is_empty:
                 context_centroid = Point(*s.exterior.coords[0])
-        except NotLocatedError:
+        except (ValueError, NotLocatedError):
             return []
         log.debug("Criteria: %s", self.criteria(g))
         geoms = {}
@@ -582,7 +582,7 @@ class ConnectionsFeatureCollection(FeatureCollection):
             context_centroid = s.centroid
             if context_centroid.is_empty:
                 context_centroid = Point(*s.exterior.coords[0])
-        except NotLocatedError:
+        except (ValueError, NotLocatedError):
             if bbox is not None:
                 context_centroid = Point(
                     (bbox[0]+bbox[2])/2.0, (bbox[1]+bbox[3])/2.0)
@@ -631,7 +631,8 @@ class PlaceContainerFeatureCollection(BrowserPage):
                         ),
                     geometry=dict(type=g.type, coordinates=g.coordinates)
                     )
-            except (AttributeError, NotLocatedError, TypeError):
+            except (AttributeError, NotLocatedError, TypeError, ValueError):
+                log.warn("Could not wrap2 catalog brain of %s", brain.getId)
                 return None
         def generate():
             for brain in catalog(portal_type={'query': ['Place', 'Location']}):

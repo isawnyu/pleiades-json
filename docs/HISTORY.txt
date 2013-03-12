@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.15.2 (2013-03-12)
+-------------------
+- Catch ValueErrors from pleiades.geographer adapters.
+
 0.15.1 (2013-02-07)
 -------------------
 - Don't expect a catalog record to contain bbox metadata, fall back to
