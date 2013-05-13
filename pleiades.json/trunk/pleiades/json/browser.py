@@ -69,6 +69,42 @@ class SnippetWrapper(object):
         else:
             return None
 
+def make_ld_context(context_items=None):
+    """Returns a JSON-LD Context object. 
+    
+    See http://json-ld.org/spec/latest/json-ld."""
+    ctx = {
+        'type': '@type',
+        'id': '@id',
+        'FeatureCollection': '_:n1',
+        'bbox': 'http://geovocab.org/geometry#bbox',
+        'features': '_:n3',
+        'Feature': 'http://geovocab.org/spatial#Feature',
+        'properties': '_:n4',
+        'geometry': 'http://geovocab.org/geometry#geometry',
+        'Point': 'http://geovocab.org/geometry#Point',
+        'LineString': 'http://geovocab.org/geometry#LineString',
+        'Polygon': 'http://geovocab.org/geometry#Polygon',
+        'MultiPoint': 'http://geovocab.org/geometry#MultiPoint',
+        'MultiLineString': 'http://geovocab.org/geometry#MultiLineString',
+        'MultiPolygon': 'http://geovocab.org/geometry#MultiPolygon',
+        'GeometryCollection': 
+            'http://geovocab.org/geometry#GeometryCollection',
+        'coordinates': '_:n5',
+        'description': 'http://purl.org/dc/terms/description',
+        'title': 'http://purl.org/dc/terms/title',
+        'link': '_:n6',
+        'location_precision': '_:n7',
+        'snippet': 'http://purl.org/dc/terms/abstract',
+        'connectsWith': '_:n8',
+        'names': '_:n9',
+        'recent_changes': '_:n10',
+        'reprPoint': '_:n11'
+        }
+    for item in context_items or []:
+        t, uri = item.split("=")
+        ctx[t.strip()] = uri.strip()
+    return ctx
 
 def wrap(ob, project_sm=False):
     try:
@@ -288,17 +324,19 @@ class FeatureCollection(JsonBase):
         connections = [o.getId() for o in self.context.getRefs(
             "connectsWith") + self.context.getBRefs("connectsWith")]
 
-        return geojson.FeatureCollection(
-            id=self.context.getId(),
-            title=self.context.Title(),
-            description=self.context.Description(),
-            features=sorted(features, key=W, reverse=True),
-            recent_changes=recent_changes,
-            names=[unicode(n, "utf-8") for n in names],
-            reprPoint=reprPoint,
-            bbox=bbox,
-            connectsWith=connections
-            )
+        return {
+            '@context': make_ld_context(),
+            'type': 'FeatureCollection',
+            'id': self.context.getId(),
+            'title': self.context.Title(),
+            'description': self.context.Description(),
+            'features': sorted(features, key=W, reverse=True),
+            'recent_changes': recent_changes,
+            'names': [unicode(n, "utf-8") for n in names],
+            'reprPoint': reprPoint,
+            'bbox': bbox,
+            'connectsWith': connections
+            }
 
     def mapping(self):
         return dict(self._data())
@@ -701,13 +739,15 @@ class SearchBatchFeatureCollection(FeatureCollection):
         else:
             bbox = None
 
-        return geojson.FeatureCollection(
-            id='search',
-            title="Search Results",
-            description="Geolocated objects in a batch of search results",
-            features=sorted(features, key=W, reverse=True),
-            bbox=bbox
-            )
+        return {
+            '@context': make_ld_context(),
+            'type': 'FeatureCollection',
+            'id': 'search',
+            'title': "Search Results",
+            'description': "Geolocated objects in a batch of search results",
+            'features': sorted(features, key=W, reverse=True),
+            'bbox': bbox
+            }
 
     def data_uri(self, **kw):
         return "data:application/json," + quote(self.value(**kw))

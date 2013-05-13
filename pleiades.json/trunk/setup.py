@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '0.15.2'
+version = '0.16'
 
 setup(name='pleiades.json',
       version=version,
