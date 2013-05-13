@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.16 (2013-05-13)
+-----------------
+- Add JSON-LD contexts to feature collections.
+
 0.15.2 (2013-03-12)
 -------------------
 - Catch ValueErrors from pleiades.geographer adapters.
