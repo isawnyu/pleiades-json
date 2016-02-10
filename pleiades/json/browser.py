@@ -1,35 +1,31 @@
-import logging
-from math import fabs, atan2, cos, pi, sin, sqrt
-from urllib import quote
-
-import geojson
-from pyproj import Proj
-from shapely.geometry import asShape, LineString, mapping, Point, shape
-
 from Acquisition import aq_inner
+from collective.geo.geographer.interfaces import IGeoreferenced
 from DateTime import DateTime
-from plone.app.layout.viewlets.content import ContentHistoryViewlet
-from plone.memoize.instance import memoize
-from Products.CMFCore.utils import getToolByName
-from zope.interface import implements, Interface, Attribute
-from zope.publisher.browser import BrowserPage, BrowserView
-from ZTUtils import make_query
-
-from pleiades.capgrids import Grid
+from math import fabs, atan2, cos, pi, sin, sqrt
 from pleiades.contentratings.basic import rating
-from pleiades.geographer.geo import FeatureGeoItem, NotLocatedError
 from pleiades.geographer.geo import extent, representative_point
+from pleiades.geographer.geo import NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
-from Products.PleiadesEntity.time import periodRanges, TimePeriodCmp, to_ad
-from zgeo.geographer.interfaces import IGeoreferenced
+from plone.memoize.instance import memoize
+from Products.CMFCore.utils import getToolByName
+from Products.PleiadesEntity.time import to_ad
+from pyproj import Proj
+from shapely.geometry import asShape, mapping, Point, shape
+from urllib import quote
+from zope.interface import implements, Interface
+from zope.publisher.browser import BrowserPage, BrowserView
+from ZTUtils import make_query
+import geojson
+import logging
 
 log = logging.getLogger("pleiades.json")
 
 TGOOGLE = Transform(PROJ_900913)
 
+
 class SnippetWrapper(object):
-    
+
     def __init__(self, context):
         self.context = context
 
@@ -69,9 +65,10 @@ class SnippetWrapper(object):
         else:
             return None
 
+
 def make_ld_context(context_items=None):
-    """Returns a JSON-LD Context object. 
-    
+    """Returns a JSON-LD Context object.
+
     See http://json-ld.org/spec/latest/json-ld."""
     ctx = {
         'type': '@type',
@@ -88,8 +85,7 @@ def make_ld_context(context_items=None):
         'MultiPoint': 'http://geovocab.org/geometry#MultiPoint',
         'MultiLineString': 'http://geovocab.org/geometry#MultiLineString',
         'MultiPolygon': 'http://geovocab.org/geometry#MultiPolygon',
-        'GeometryCollection': 
-            'http://geovocab.org/geometry#GeometryCollection',
+        'GeometryCollection': 'http://geovocab.org/geometry#GeometryCollection',
         'coordinates': '_:n5',
         'description': 'http://purl.org/dc/terms/description',
         'title': 'http://purl.org/dc/terms/title',
@@ -106,6 +102,7 @@ def make_ld_context(context_items=None):
         ctx[t.strip()] = uri.strip()
     return ctx
 
+
 def wrap(ob, project_sm=False):
     try:
         ex = extent(ob)
@@ -119,47 +116,47 @@ def wrap(ob, project_sm=False):
         geometry = None
         precision = None
     return geojson.Feature(
-                    id=ob.getId(),
-                    properties=dict(
-                        title=ob.Title(),
-                        snippet=SnippetWrapper(ob).snippet,
-                        description=ob.Description(),
-                        link=ob.absolute_url(),
-                        location_precision=precision,
-                        ),
-                    geometry=geometry
-                    )
+        id=ob.getId(),
+        properties=dict(
+            title=ob.Title(),
+            snippet=SnippetWrapper(ob).snippet,
+            description=ob.Description(),
+            link=ob.absolute_url(),
+            location_precision=precision,
+            ),
+        geometry=geometry,
+    )
+
 
 class GridFeature(object):
-    
     implements(IGeoreferenced)
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-    
+
     def getId(self):
         return self.context.id
-    
+
     @property
     def title(self):
         return unicode(self.context.Title())
-    
+
     @property
     def description(self):
         return unicode(self.context.Description())
-    
+
     def absolute_url(self):
         return self.context.id
-    
+
     @property
     def type(self):
         return self.context.type
-    
+
     @property
     def coordinates(self):
         return self.context.coordinates
-    
+
     @property
     def __geo_interface__(self):
         return dict(
@@ -168,8 +165,10 @@ class GridFeature(object):
 
 class W(object):
     # spatial 'within' wrapper for use as a sorting key
+
     def __init__(self, o):
         self.o = o
+
     def __lt__(self, other):
         try:
             return asShape(self.o.geometry).within(asShape(other.o.geometry))
@@ -179,8 +178,10 @@ class W(object):
 
 class L(object):
     # Spatial length wrapper for use as a sorting key
+
     def __init__(self, o):
         self.k, v = o
+
     def __lt__(self, other):
         try:
             return asShape(
@@ -190,10 +191,13 @@ class L(object):
 
 
 class IJSON(Interface):
+
     def mapping():
         """As dict"""
+
     def value():
         """As JSON"""
+
     def data_uri():
         """JSON data URI"""
 
@@ -220,7 +224,7 @@ class Feature(JsonBase):
     def _data(self):
         sm = bool(self.request.form.get('sm', 0))
         return wrap(self.context, sm)
-        
+
     def mapping(self):
         return dict(self._data())
 
@@ -245,6 +249,7 @@ def getContents(context, **kw):
                 yield r.getObject()
             except:
                 raise
+
 
 class FeatureCollection(JsonBase):
 
@@ -300,7 +305,8 @@ class FeatureCollection(JsonBase):
                 records.append((metadata['timestamp'], metadata))
             for ob in getContents(self.context, **contentFilter):
                 history = rt.getHistoryMetadata(ob)
-                if not history: continue
+                if not history:
+                    continue
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
             records = sorted(records, reverse=True)
@@ -317,7 +323,9 @@ class FeatureCollection(JsonBase):
                     break
         except:
             log.error(
-                "Failed to find last change metadata for %s", repr(self.context))
+                "Failed to find last change metadata for %s",
+                repr(self.context),
+            )
             recent_changes = None
 
         # connections
@@ -358,15 +366,16 @@ def sign(x):
     else:
         return 1.0
 
+
 def stick_interpolate(cc, bbox):
     """Given a context centroid and a box, find the bisecting line that goes 
     through each centroid, interpolated to the context centroid point.
-    
+
     Approximate using a circle around the box.
     """
 
     TOLERANCE = 1.0e-6
-    
+
     # transform to a coordinate system centered on ccx, ccy
     llx, lly, urx, ury = bbox
     ccx, ccy = cc
@@ -392,8 +401,8 @@ def stick_interpolate(cc, bbox):
         theta = atan2(cy, cx)
         dx = R*sin(theta)
         dy = R*cos(theta)
-        shiftx = dx #*sign(cx)
-        shifty = dy #*sign(cy)
+        shiftx = dx  # *sign(cx)
+        shifty = dy  # *sign(cy)
         if theta <= -pi/2.0 or theta >= pi/2.0:
             shiftx, shifty = shifty, shiftx
         rx = cx - shiftx
@@ -430,9 +439,10 @@ def stick_interpolate(cc, bbox):
                 sx = cx-R
     return (rx+ccx, ry+ccy), (sx+ccx, sy+ccy)
 
+
 def aggregate(context_centroid, portal_url, geom_bbox, objects):
     """A feature that is related to roughly located objects"""
-    bbox = geom_bbox #geom.bounds
+    bbox = geom_bbox  # geom.bounds
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
 
@@ -447,12 +457,12 @@ def aggregate(context_centroid, portal_url, geom_bbox, objects):
         snippet="%s degree by %s degree cell" % (
             bbox[2]-bbox[0], bbox[3]-bbox[1]),
         link="%s/search?%s" % (portal_url, make_query(query)))
-    
+
     description = "".join(
         "<li><a href=\"%s\">%s</a> (<em>%s</em>): %s</li>" % (
-            ob.alternate_link, 
-            ob.name, 
-            ob.snippet, 
+            ob.alternate_link,
+            ob.name,
+            ob.snippet,
             ob.altLocation or "") for ob in objects)
     props['description'] = "<div><ul>" + description + "</ul></div>"
 
@@ -461,9 +471,9 @@ def aggregate(context_centroid, portal_url, geom_bbox, objects):
     cclon, cclat = context_centroid
 
     tsm = Proj(PROJ_900913)
-    
+
     (ccx, llx, urx), (ccy, lly, ury) = tsm(
-        [cclon, bbox[0], bbox[2]], 
+        [cclon, bbox[0], bbox[2]],
         [cclat, bbox[1], bbox[3]])
 
     (rx, ry), (sx, sy) = stick_interpolate((ccx, ccy), (llx, lly, urx, ury))
@@ -485,10 +495,10 @@ class RoughlyLocatedFeatureCollection(JsonBase):
 
     def criteria(self, g):
         return dict(
-            where={'query': g.bounds, 'range': 'intersection' }, 
+            where={'query': g.bounds, 'range': 'intersection'},
             portal_type={'query': ['Place']},
-            location_precision={'query': ['rough']}
-            )
+            location_precision={'query': ['rough']},
+        )
 
     def getFeatures(self):
         portal_url = getToolByName(self.context, 'portal_url')()
@@ -509,10 +519,9 @@ class RoughlyLocatedFeatureCollection(JsonBase):
             if brain.getId == self.context.getId():
                 # skip self
                 continue
-            item = PleiadesBrainPlacemark(brain, self.request) 
+            item = PleiadesBrainPlacemark(brain, self.request)
             geo = brain.zgeo_geometry
-            if geo and geo.has_key('type') and geo.has_key('coordinates'):
-                
+            if geo and 'type' in geo and 'coordinates' in geo:
                 key = repr(geo)
                 if not key in geoms:
                     geoms[key] = geo
@@ -524,10 +533,10 @@ class RoughlyLocatedFeatureCollection(JsonBase):
             [aggregate(
                 (context_centroid.x, context_centroid.y),
                 portal_url,
-                asShape(geoms[key]).bounds, 
-                val) for key, val in sorted(
-                    objects.items(), key=L, reverse=True)]
-                )
+                asShape(geoms[key]).bounds,
+                val,
+            ) for key, val in sorted(objects.items(), key=L, reverse=True)]
+        )
 
     @memoize
     def _data(self):
@@ -545,7 +554,7 @@ class RoughlyLocatedFeatureCollection(JsonBase):
             bbox = [min(xs), min(ys), max(xs), max(ys)]
         else:
             bbox = None
-        
+
         return geojson.FeatureCollection(
             id=self.context.getId(),
             features=features,
@@ -579,9 +588,9 @@ class ConnectionsFeatureCollection(FeatureCollection):
             func = lambda f: wftool.getInfoFor(f, 'review_state') == 'published'
         else:
             func = lambda f: True
-        conxns = [o for o in list(
-                    context.getConnections() + context.getConnections_from())
-                    if func(o) ]
+        conxns = [
+            o for o in list(context.getConnections() + context.getConnections_from())
+            if func(o)]
         geoms = {}
         objects = {}
         features = []
@@ -595,10 +604,10 @@ class ConnectionsFeatureCollection(FeatureCollection):
                 gi = IGeoreferenced(ob)
                 if gi.precision == 'rough':
                     brain = catalog(getId=ob.getId())[0]
-                    item = PleiadesBrainPlacemark(brain, self.request) 
+                    item = PleiadesBrainPlacemark(brain, self.request)
                     geo = gi.__geo_interface__['geometry']
                     key = repr(geo)
-                    if not key in geoms:
+                    if key not in geoms:
                         geoms[key] = geo
                     if key in objects:
                         objects[key].append(item)
@@ -608,7 +617,7 @@ class ConnectionsFeatureCollection(FeatureCollection):
                     features.append(f)
             except (NotLocatedError, ValueError):
                 log.error("Failed to located %s", ob)
-        
+
         if len(xs) * len(ys) > 0:
             bbox = [min(xs), min(ys), max(xs), max(ys)]
         else:
@@ -631,28 +640,28 @@ class ConnectionsFeatureCollection(FeatureCollection):
             aggregate(
                 (context_centroid.x, context_centroid.y),
                 portal_url,
-                asShape(geoms[key]).bounds, 
-                val) for key, val in objects.items()]
+                asShape(geoms[key]).bounds,
+                val,
+            ) for key, val in objects.items()
+        ]
 
         return geojson.FeatureCollection(
             id=self.context.getId(),
             title=self.context.Title(),
             description=self.context.Description(),
             features=rough_features + sorted(features, key=W, reverse=True),
-            bbox=bbox
-            )
+            bbox=bbox,
+        )
 
 
 class PlaceContainerFeatureCollection(BrowserPage):
-    
-    """
-    """
-    
+
     def __call__(self):
         xs = []
         ys = []
         catalog = self.context.portal_catalog
         portal_path = self.context.portal_url.getPortalObject().getPhysicalPath()
+
         def wrap2(brain):
             try:
                 ob = brain.getObject()
@@ -672,6 +681,7 @@ class PlaceContainerFeatureCollection(BrowserPage):
             except (AttributeError, NotLocatedError, TypeError, ValueError):
                 log.warn("Could not wrap2 catalog brain of %s", brain.getId)
                 return None
+
         def generate():
             for brain in catalog(portal_type={'query': ['Place', 'Location']}):
                 w = wrap2(brain)
@@ -687,8 +697,8 @@ class PlaceContainerFeatureCollection(BrowserPage):
             bbox = None
         c = geojson.FeatureCollection(
             features=features,
-            bbox=bbox
-            )        
+            bbox=bbox,
+        )
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/json')
         return geojson.dumps(c)
@@ -703,7 +713,6 @@ class SearchBatchFeatureCollection(FeatureCollection):
         ys = []
 
         for brain in brains:
-            
             try:
                 extent = brain.zgeo_geometry
                 bbox = brain.bbox
@@ -715,10 +724,10 @@ class SearchBatchFeatureCollection(FeatureCollection):
                     shape(extent).centroid.coords)[0]
                 precision = brain.reprPt and brain.reprPt[1] or "unlocated"
                 mark = PleiadesBrainPlacemark(brain, self.request)
-            except Exception, e:
+            except Exception as e:
                 log.exception(
                     "Search marking failure for %s: %s",
-                    brain.getPath(), str(e) )
+                    brain.getPath(), str(e))
                 continue
 
             features.append(
@@ -731,7 +740,9 @@ class SearchBatchFeatureCollection(FeatureCollection):
                         link=brain.getURL(),
                         location_precision=precision,
                     ),
-                    geometry={'type': 'Point', 'coordinates': reprPt} ))
+                    geometry={'type': 'Point', 'coordinates': reprPt},
+                )
+            )
             xs.extend([bbox[0], bbox[2]])
             ys.extend([bbox[1], bbox[3]])
         if len(xs) * len(ys) > 0:
@@ -751,4 +762,3 @@ class SearchBatchFeatureCollection(FeatureCollection):
 
     def data_uri(self, **kw):
         return "data:application/json," + quote(self.value(**kw))
-

@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import os
 
 version = '0.16'
 
@@ -24,7 +23,6 @@ setup(name='pleiades.json',
       install_requires=[
           'geojson',
           'shapely',
-          'zgeo.plone.geographer',
           'pleiades.openlayers',
           'pleiades.geographer'
           ],
