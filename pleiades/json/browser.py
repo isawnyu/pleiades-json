@@ -272,8 +272,7 @@ class FeatureCollection(JsonBase):
         if len(x) > 0:
             features = [wrap(ob, sm) for ob in x]
         else:
-            features = [wrap(ob, sm) for ob in self.context.getFeatures()] \
-                     + [wrap(ob, sm) for ob in self.context.getParts()]
+            features = [wrap(ob, sm) for ob in self.context.getFeatures()]
 
         try:
             ex = extent(self.context)
