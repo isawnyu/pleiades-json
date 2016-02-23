@@ -4,6 +4,8 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="pleiades.json">
 
+  <include package="pleiades.geographer" />
+
   <browser:page
     for="Products.PleiadesEntity.content.interfaces.IPlaceContainer"
     name="json-georeferenced"

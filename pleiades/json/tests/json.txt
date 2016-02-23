@@ -18,9 +18,9 @@ Request un-transformed GeoJSON
   >>> len(data['features'])
   1
   >>> data['features'][0]['geometry']['coordinates']
-  [-86.480833333333294, 34.769722222222001]
+  [-86.4808333333333, 34.769722222222]
   >>> data['bbox']
-  [-86.480833333333294, 34.769722222222001, -86.480833333333294, 34.769722222222001]
+  [-86.4808333333333, 34.769722222222, -86.4808333333333, 34.769722222222]
 
 Request spherical mercator GeoJSON
     
@@ -34,5 +34,5 @@ Request spherical mercator GeoJSON
   'application/json'
   >>> data = simplejson.loads(r.getBody())
   >>> data['features'][0]['geometry']['coordinates']
-  [-9627002.3300446216, 4132631.1811658409]
+  [-9627002.330044622, 4132631.181165841]
 
