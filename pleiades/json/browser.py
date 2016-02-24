@@ -9,7 +9,7 @@ from shapely.geometry import asShape, LineString, mapping, Point, shape
 from Acquisition import aq_inner
 from DateTime import DateTime
 from plone.app.layout.viewlets.content import ContentHistoryViewlet
-from plone.memoize.instance import memoize
+from plone.memoize import view
 from Products.CMFCore.utils import getToolByName
 from zope.interface import implements, Interface, Attribute
 from zope.publisher.browser import BrowserPage, BrowserView
@@ -216,7 +216,7 @@ class JsonBase(BrowserView):
 
 class Feature(JsonBase):
 
-    @memoize
+    @view.memoize
     def _data(self):
         sm = bool(self.request.form.get('sm', 0))
         return wrap(self.context, sm)
@@ -233,22 +233,32 @@ class Feature(JsonBase):
         return self.value()
 
 
-def getContents(context, **kw):
-    for r in context.getFolderContents():
-        test = 1
-        for k, v in kw.items():
-            test *= (r[k] == v or v in r[k])
-            if not test:
-                break
-        if test:
-            try:
-                yield r.getObject()
-            except:
-                raise
-
 class FeatureCollection(JsonBase):
 
-    @memoize
+    @view.memoize
+    def _getAllContents(self):
+        # We use the catalog version here rather than listFolderContents
+        # Need to check if that is optimal
+        return self.context.listFolderContents()
+
+    def getContents(self, **contentFilter):
+        get_info = None
+        if 'review_state' in contentFilter:
+            get_info = getToolByName(self.context, 'workflow_tool').getInfoFor
+        for r in self._getAllContents():
+            test = 1
+            for k, v in contentFilter.items():
+                if k == 'review_state':
+                    val = get_info(r, 'review_state')
+                else:
+                    val = getattr(r, k, None) or ''
+                test *= (val == v or v in val)
+                if not test:
+                    break
+            if test:
+                yield r
+
+    @view.memoize
     def _data(self, published_only=False):
         if published_only:
             contentFilter = {'review_state': 'published'}
@@ -258,10 +268,7 @@ class FeatureCollection(JsonBase):
         xs = []
         ys = []
         x = sorted(
-            getContents(
-                self.context,
-                **dict(
-                    [('portal_type', 'Location')] + contentFilter.items())),
+            self.getContents(portal_type='Location', **contentFilter),
             key=rating, reverse=True)
 
         if len(x) > 0:
@@ -282,10 +289,7 @@ class FeatureCollection(JsonBase):
 
         # Names
         objs = sorted(
-            getContents(
-                self.context,
-                **dict(
-                    [('portal_type', 'Name')] + contentFilter.items())),
+            self.getContents(portal_type='Name', **contentFilter),
             key=rating, reverse=True)
         names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
 
@@ -298,7 +302,7 @@ class FeatureCollection(JsonBase):
             if history:
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
                 records.append((metadata['timestamp'], metadata))
-            for ob in getContents(self.context, **contentFilter):
+            for ob in self.getContents(**contentFilter):
                 history = rt.getHistoryMetadata(ob)
                 if not history: continue
                 metadata = history.retrieve(-1)['metadata']['sys_metadata']
@@ -529,7 +533,7 @@ class RoughlyLocatedFeatureCollection(JsonBase):
                     objects.items(), key=L, reverse=True)]
                 )
 
-    @memoize
+    @view.memoize
     def _data(self):
         sm = bool(self.request.form.get('sm', 0))
         xs = []
@@ -566,7 +570,7 @@ class RoughlyLocatedFeatureCollection(JsonBase):
 
 class ConnectionsFeatureCollection(FeatureCollection):
 
-    @memoize
+    @view.memoize
     def _data(self, published_only=False):
         context = self.context
         catalog = getToolByName(self.context, 'portal_catalog')
@@ -696,7 +700,7 @@ class PlaceContainerFeatureCollection(BrowserPage):
 
 class SearchBatchFeatureCollection(FeatureCollection):
 
-    @memoize
+    @view.memoize
     def _data(self, brains=None):
         features = []
         xs = []
