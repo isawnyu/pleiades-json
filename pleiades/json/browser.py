@@ -2,7 +2,6 @@ from Acquisition import aq_inner
 from collective.geo.geographer.interfaces import IGeoreferenced
 from DateTime import DateTime
 from math import fabs, atan2, cos, pi, sin, sqrt
-from pleiades.contentratings.basic import rating
 from pleiades.geographer.geo import extent, representative_point
 from pleiades.geographer.geo import NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
@@ -260,14 +259,12 @@ class FeatureCollection(JsonBase):
         else:
             contentFilter = {}
         sm = bool(self.request.form.get('sm', 0))
-        xs = []
-        ys = []
         x = sorted(
             getContents(
                 self.context,
                 **dict(
                     [('portal_type', 'Location')] + contentFilter.items())),
-            key=rating, reverse=True)
+            reverse=True)
 
         if len(x) > 0:
             features = [wrap(ob, sm) for ob in x]
@@ -290,7 +287,7 @@ class FeatureCollection(JsonBase):
                 self.context,
                 **dict(
                     [('portal_type', 'Name')] + contentFilter.items())),
-            key=rating, reverse=True)
+            reverse=True)
         names = [o.getNameAttested() or o.getNameTransliterated() for o in objs]
 
         # Modification time, actor, contributors

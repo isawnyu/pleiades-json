@@ -44,7 +44,6 @@ ptc.setupPloneSite(products=[
     # 'pleiades.workspace',
     'plone.app.iterate',
     'pleiades.geographer',
-    'pleiades.contentratings'
 ])
 
 
