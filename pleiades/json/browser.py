@@ -127,41 +127,6 @@ def wrap(ob, project_sm=False):
     )
 
 
-class GridFeature(object):
-    implements(IGeoreferenced)
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def getId(self):
-        return self.context.id
-
-    @property
-    def title(self):
-        return unicode(self.context.Title())
-
-    @property
-    def description(self):
-        return unicode(self.context.Description())
-
-    def absolute_url(self):
-        return self.context.id
-
-    @property
-    def type(self):
-        return self.context.type
-
-    @property
-    def coordinates(self):
-        return self.context.coordinates
-
-    @property
-    def __geo_interface__(self):
-        return dict(
-            type=self.context.type, coordinates=self.context.coordinates)
-
-
 class W(object):
     # spatial 'within' wrapper for use as a sorting key
 
@@ -274,10 +239,8 @@ class FeatureCollection(JsonBase):
         try:
             ex = extent(self.context)
             bbox = shape(ex['extent']).bounds
-            precision = ex['precision']
             reprPoint = representative_point(self.context)['coords']
         except:
-            precision = "unlocated"
             bbox = None
             reprPoint = None
 
