@@ -327,7 +327,7 @@ def sign(x):
 
 
 def stick_interpolate(cc, bbox):
-    """Given a context centroid and a box, find the bisecting line that goes 
+    """Given a context centroid and a box, find the bisecting line that goes
     through each centroid, interpolated to the context centroid point.
 
     Approximate using a circle around the box.
@@ -548,7 +548,8 @@ class ConnectionsFeatureCollection(FeatureCollection):
         else:
             func = lambda f: True
         conxns = [
-            o for o in list(context.getConnections() + context.getConnections_from())
+            o for o in list(context.getSubConnections()
+                            + context.getReverseConnections())
             if func(o)]
         geoms = {}
         objects = {}
