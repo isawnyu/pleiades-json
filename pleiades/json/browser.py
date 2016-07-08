@@ -548,8 +548,7 @@ class ConnectionsFeatureCollection(FeatureCollection):
         else:
             func = lambda f: True
         conxns = [
-            o for o in list(context.getSubConnections()
-                            + context.getReverseConnections())
+            o for o in context.getConnectedPlaces()
             if func(o)]
         geoms = {}
         objects = {}
