@@ -562,7 +562,7 @@ class ConnectionsFeatureCollection(FeatureCollection):
                 ys.extend([b[1], b[3]])
                 gi = IGeoreferenced(ob)
                 if gi.precision == 'rough':
-                    brain = catalog(getId=ob.getId())[0]
+                    brain = catalog(portal_type='Place', getId=ob.getId())[0]
                     item = PleiadesBrainPlacemark(brain, self.request)
                     geo = gi.__geo_interface__['geometry']
                     key = repr(geo)
