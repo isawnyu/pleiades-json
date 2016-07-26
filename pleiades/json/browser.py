@@ -10,7 +10,7 @@ from plone.memoize.instance import memoize
 from Products.CMFCore.utils import getToolByName
 from Products.PleiadesEntity.time import to_ad
 from pyproj import Proj
-from shapely.geometry import asShape, mapping, Point, shape
+from shapely.geometry import asShape, box, mapping, Point, shape
 from urllib import quote
 from zope.interface import implements, Interface
 from zope.publisher.browser import BrowserPage, BrowserView
@@ -532,87 +532,6 @@ class RoughlyLocatedFeatureCollection(JsonBase):
         return self.value()
 
 
-class ConnectionsFeatureCollection(FeatureCollection):
-
-    @memoize
-    def _data(self, published_only=False):
-        context = self.context
-        catalog = getToolByName(self.context, 'portal_catalog')
-        wftool = getToolByName(self.context, 'portal_workflow')
-        portal_url = getToolByName(self.context, 'portal_url')()
-        sm = bool(self.request.form.get('sm', 0))
-        xs = []
-        ys = []
-        if published_only:
-            func = lambda f: wftool.getInfoFor(f, 'review_state') == 'published'
-        else:
-            func = lambda f: True
-        conxns = [
-            o for o in context.getConnectedPlaces()
-            if func(o)]
-        geoms = {}
-        objects = {}
-        features = []
-        for ob in conxns:
-            try:
-                f = wrap(ob, sm)
-                s = asShape(f.geometry)
-                b = s.bounds
-                xs.extend([b[0], b[2]])
-                ys.extend([b[1], b[3]])
-                gi = IGeoreferenced(ob)
-                if gi.precision == 'rough':
-                    brain = catalog(portal_type='Place', getId=ob.getId())[0]
-                    item = PleiadesBrainPlacemark(brain, self.request)
-                    geo = gi.__geo_interface__['geometry']
-                    key = repr(geo)
-                    if key not in geoms:
-                        geoms[key] = geo
-                    if key in objects:
-                        objects[key].append(item)
-                    else:
-                        objects[key] = [item]
-                else:
-                    features.append(f)
-            except (NotLocatedError, ValueError):
-                log.error("Failed to located %s", ob)
-
-        if len(xs) * len(ys) > 0:
-            bbox = [min(xs), min(ys), max(xs), max(ys)]
-        else:
-            bbox = None
-
-        try:
-            g = IGeoreferenced(self.context)
-            s = shape(g.geo)
-            context_centroid = s.centroid
-            if context_centroid.is_empty:
-                context_centroid = Point(*s.exterior.coords[0])
-        except (ValueError, NotLocatedError):
-            if bbox is not None:
-                context_centroid = Point(
-                    (bbox[0]+bbox[2])/2.0, (bbox[1]+bbox[3])/2.0)
-            else:
-                return []
-
-        rough_features = [
-            aggregate(
-                (context_centroid.x, context_centroid.y),
-                portal_url,
-                asShape(geoms[key]).bounds,
-                val,
-            ) for key, val in objects.items()
-        ]
-
-        return geojson.FeatureCollection(
-            id=self.context.getId(),
-            title=self.context.Title(),
-            description=self.context.Description(),
-            features=rough_features + sorted(features, key=W, reverse=True),
-            bbox=bbox,
-        )
-
-
 class PlaceContainerFeatureCollection(BrowserPage):
 
     def __call__(self):
@@ -665,8 +584,7 @@ class PlaceContainerFeatureCollection(BrowserPage):
 
 class SearchBatchFeatureCollection(FeatureCollection):
 
-    @memoize
-    def _data(self, brains=None):
+    def _features(self, brains):
         features = []
         xs = []
         ys = []
@@ -678,9 +596,10 @@ class SearchBatchFeatureCollection(FeatureCollection):
                 if not (extent or bbox):
                     continue
                 bbox = bbox or shape(extent).bounds
-                extent = extent or mapping(box(*bbox))
-                reprPt = brain.reprPt and brain.reprPt[0] or list(
-                    shape(extent).centroid.coords)[0]
+                reprPt = brain.reprPt and brain.reprPt[0]
+                if not reprPt:
+                    extent = extent or mapping(box(*bbox))
+                    reprPt = list(shape(extent).centroid.coords)[0]
                 precision = brain.reprPt and brain.reprPt[1] or "unlocated"
                 mark = PleiadesBrainPlacemark(brain, self.request)
             except Exception as e:
@@ -709,6 +628,11 @@ class SearchBatchFeatureCollection(FeatureCollection):
         else:
             bbox = None
 
+        return features, bbox
+
+    @memoize
+    def _data(self, brains=None):
+        features, bbox = self._features(brains)
         return {
             '@context': make_ld_context(),
             'type': 'FeatureCollection',
@@ -717,7 +641,29 @@ class SearchBatchFeatureCollection(FeatureCollection):
             'description': "Geolocated objects in a batch of search results",
             'features': sorted(features, key=W, reverse=True),
             'bbox': bbox
-            }
+        }
 
     def data_uri(self, **kw):
         return "data:application/json," + quote(self.value(**kw))
+
+
+class ConnectionsFeatureCollection(SearchBatchFeatureCollection):
+
+    @memoize
+    def _data(self, published_only=False):
+        catalog = getToolByName(self.context, 'portal_catalog')
+        uids = self.context.getConnectedPlaceUIDs()
+        q = {'UID': uids}
+        if published_only:
+            q['review_state'] = 'published'
+        brains = catalog(**q)
+
+        features, bbox = self._features(brains)
+
+        return geojson.FeatureCollection(
+            id=self.context.getId(),
+            title=self.context.Title(),
+            description=self.context.Description(),
+            features=features,
+            bbox=bbox,
+        )
