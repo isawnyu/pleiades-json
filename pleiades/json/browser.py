@@ -616,7 +616,7 @@ class SearchBatchFeatureCollection(FeatureCollection):
 
             features.append(
                 geojson.Feature(
-                    id=brain.getId,
+                    id=brain.UID,
                     properties=dict(
                         title=brain.Title,
                         snippet=mark.snippet,
