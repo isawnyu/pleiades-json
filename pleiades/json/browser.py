@@ -2,7 +2,7 @@ from Acquisition import aq_inner
 from collective.geo.geographer.interfaces import IGeoreferenced
 from DateTime import DateTime
 from math import fabs, atan2, cos, pi, sin, sqrt
-from pleiades.geographer.geo import extent, representative_point
+from pleiades.geographer.geo import is_clockwise, extent, representative_point
 from pleiades.geographer.geo import NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
@@ -107,6 +107,12 @@ def wrap(ob, project_sm=False):
         ex = extent(ob)
         precision = ex['precision']
         geometry = ex['extent']
+        coordinates = []
+        for coordinate_set in geometry['coordinates']:
+            if is_clockwise(coordinate_set):
+                coordinate_set = tuple(reversed(coordinate_set))
+            coordinates.append(coordinate_set)
+        geometry['coordinates'] = tuple(coordinates)
         if project_sm:
             g = geometry.get('geometry', geometry)
             geo = TGOOGLE(g)
