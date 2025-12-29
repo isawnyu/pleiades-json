@@ -2,7 +2,12 @@ from Acquisition import aq_inner
 from collective.geo.geographer.interfaces import IGeoreferenced
 from DateTime import DateTime
 from math import fabs, atan2, cos, pi, sin, sqrt
-from pleiades.geographer.geo import is_clockwise, extent, representative_point
+from pleiades.geographer.geo import (
+    extent,
+    footprint,
+    is_clockwise,
+    representative_point,
+)
 from pleiades.geographer.geo import NotLocatedError
 from pleiades.kml.browser import PleiadesBrainPlacemark
 from pleiades.openlayers.proj import Transform, PROJ_900913
@@ -249,6 +254,10 @@ class FeatureCollection(JsonBase):
         except:
             bbox = None
             reprPoint = None
+        try:
+            footprint_geom = footprint(self.context)
+        except:
+            footprint_geom = None
 
         # Names
         objs = sorted(
@@ -308,7 +317,8 @@ class FeatureCollection(JsonBase):
             'names': [unicode(n, "utf-8") for n in names],
             'reprPoint': reprPoint,
             'bbox': bbox,
-            'connectsWith': connections
+            'connectsWith': connections,
+            'footprint': footprint_geom
             }
 
     def mapping(self):
